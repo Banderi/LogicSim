@@ -1,1 +1,1 @@
-LogicSim
+A simple logic/circuit simulator.
