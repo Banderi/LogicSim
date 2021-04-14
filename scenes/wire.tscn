@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=2]
+
+[ext_resource path="res://scripts/wire.gd" type="Script" id=1]
+
+[node name="Line2D" type="Line2D"]
+points = PoolVector2Array( 269.323, 430.43, 532.711, 608.137, 807.205, 230.509, 1170.55, 663.671 )
+default_color = Color( 0, 0, 0, 1 )
+script = ExtResource( 1 )

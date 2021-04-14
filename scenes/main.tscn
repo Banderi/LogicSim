@@ -1,0 +1,30 @@
+[gd_scene load_steps=2 format=2]
+
+[ext_resource path="res://scripts/main.gd" type="Script" id=4]
+
+[node name="Node2D" type="Node2D"]
+script = ExtResource( 4 )
+
+[node name="nodes" type="Node2D" parent="."]
+position = Vector2( 743.735, 559.978 )
+
+[node name="inputs" type="ColorRect" parent="."]
+margin_left = -117.0
+margin_top = -60.0
+margin_right = 208.0
+margin_bottom = 1116.0
+color = Color( 0.254902, 0.254902, 0.254902, 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="outputs" type="ColorRect" parent="."]
+margin_left = 1401.0
+margin_top = -47.0
+margin_right = 1713.0
+margin_bottom = 1141.0
+color = Color( 0.254902, 0.254902, 0.254902, 1 )
+__meta__ = {
+"_edit_lock_": true,
+"_edit_use_anchors_": false
+}
