@@ -13,21 +13,17 @@ var input_wires
 
 ###
 
-func calculate(inputs):
-	pass
+#func calculate(inputs):
+#	pass
 
 ###
 
 func refresh_name(newname):
-#	if !Engine.editor_hint:
-#		yield(self, "ready")
 	$Label.text = newname
 	circuitname = newname
 
-func refresh_circuit(c):
-#	if !Engine.editor_hint:
-#		yield(self, "ready")
-	match c:
+func load_circuit(n):
+	match n:
 		-99:
 			refresh_name("AND")
 			refresh_inputs(2)
@@ -38,11 +34,9 @@ func refresh_circuit(c):
 			refresh_inputs(1)
 			refresh_outputs(1)
 			pass
-	circuit = c
+	circuit = n
 
-func refresh_inputs(pins):
-#	if !Engine.editor_hint:
-#		yield(self, "ready")
+func refresh_inputs(pins): # generates number of input pins
 	inputs = pins
 	for n in $inputs.get_children():
 		n.queue_free()
@@ -53,9 +47,7 @@ func refresh_inputs(pins):
 		$inputs.add_child(newpin)
 	rect_size[1] = 30 * max(inputs, outputs) + 30
 
-func refresh_outputs(pins):
-#	if !Engine.editor_hint:
-#		yield(self, "ready")
+func refresh_outputs(pins): # generates number of output pins
 	outputs = pins
 	for n in $outputs.get_children():
 		n.queue_free()
@@ -66,16 +58,20 @@ func refresh_outputs(pins):
 		$outputs.add_child(newpin)
 	rect_size[1] = 30 * max(inputs, outputs) + 30
 
-
-# Called when the node enters the scene tree for the first time.
-func _ready():
-#	refresh_inputs(inputs)
-#	refresh_outputs(outputs)
-	pass # Replace with function body.
-
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
 	if Engine.editor_hint:
 		refresh_inputs(inputs)
 		refresh_outputs(outputs)
-	pass
+
+	# basic logic for common gates
+	match circuit:
+		-99: # AND gate
+			var through = true
+			for i in $inputs.get_children():
+				if !i.enabled || !i.live:
+					through = false
+			$outputs.get_child(0).live = through
+
+		-98: # NOT gate
+			$outputs.get_child(0).live = !$inputs.get_child(0).live

@@ -21,7 +21,7 @@ config/icon="res://icon.png"
 
 [autoload]
 
-logic="*res://scripts/circuit_logic.gd"
+logic="*res://scripts/logic.gd"
 
 [display]
 

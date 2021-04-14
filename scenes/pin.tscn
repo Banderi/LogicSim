@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=2]
+[gd_scene load_steps=3 format=2]
 
 [ext_resource path="res://scripts/pin.gd" type="Script" id=1]
+[ext_resource path="res://fonts/slkscr_small.tres" type="DynamicFont" id=2]
 
 [node name="Pin" type="ColorRect"]
 margin_left = -10.0
@@ -15,3 +16,16 @@ __meta__ = {
 }
 
 [node name="Node2D" type="Node2D" parent="."]
+
+[node name="Label" type="Label" parent="."]
+margin_left = -17.2186
+margin_top = -25.2048
+margin_right = 40.7814
+margin_bottom = -5.2048
+custom_fonts/font = ExtResource( 2 )
+text = "_/_"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+[connection signal="mouse_entered" from="." to="." method="_on_Pin_mouse_entered"]
+[connection signal="mouse_exited" from="." to="." method="_on_Pin_mouse_exited"]
