@@ -2,8 +2,11 @@ extends Node2D
 
 const INPUT = preload("res://scenes/node_input.tscn")
 const OUTPUT = preload("res://scenes/node_output.tscn")
-const NODE = preload("res://scenes/node_free.tscn")
+const GATE = preload("res://scenes/circuit_gate.tscn")
 const WIRE = preload("res://scenes/wire.tscn")
+const PIN = preload("res://scenes/free_pin.tscn")
+
+const ACMOTOR = preload("res://scenes/ac_motor.tscn")
 
 ####
 
@@ -14,6 +17,20 @@ func depopulate():
 		n.queue_free()
 	for n in $nodes.get_children():
 		n.queue_free()
+
+func get_pin(c, p, inputs):
+	if c == -99:
+		return $inputs.get_child(p).get_node("Pin")
+	elif c == 99:
+		return $outputs.get_child(p).get_node("Pin")
+	else:
+		if inputs:
+			return $nodes.get_child(c).get_node("inputs").get_child(p)
+		else:
+			var o = $nodes.get_child(c).get_node("outputs").get_child(p)
+			if o == null:
+				return $nodes.get_child(c).get_node("inputs").get_child(p)
+			return $nodes.get_child(c).get_node("outputs").get_child(p)
 
 func populate(n):
 	depopulate()
@@ -35,39 +52,40 @@ func populate(n):
 		$outputs.add_child(newoutput)
 
 	for i in circuitdata["circuits"]: # populate sub-circuits
-		var newnode = NODE.instance()
-		newnode.rect_position = Vector2(i[1], i[2])
-		newnode.load_circuit(i[0])
-		$nodes.add_child(newnode)
+		if i[0] == -999:
+			var pin = PIN.instance()
+			pin.position = Vector2(i[1], i[2])
+			$nodes.add_child(pin)
+		elif i[0] <= -200:
+			match i[0]:
+				-201:
+					var motor = ACMOTOR.instance()
+					motor.position = Vector2(i[1], i[2])
+					$nodes.add_child(motor)
+		else:
+			var newgate = GATE.instance()
+			newgate.rect_position = Vector2(i[1], i[2])
+			newgate.load_circuit(i[0])
+			$nodes.add_child(newgate)
 
 	var prev_circuit = -1
-	for c in circuitdata["wires"]: # for every circuit "stage"
-		var output = 0
-		for i in c: # for every output of previous circuit
-			for w in i: # for every wire
+	for w in circuitdata["wires"]: # for every wire
 
-				var orig_pin
-				var dest_pin
+		var newwire = WIRE.instance()
 
-				var newwire = WIRE.instance()
+		var orig_pin = get_pin(w[0][0], w[0][1], false)
+		var dest_pin = get_pin(w[1][0], w[1][1], true)
 
-				if prev_circuit == -1:
-					orig_pin = $inputs.get_child(output).get_node("Pin")
-				else:
-					orig_pin = $nodes.get_child(prev_circuit).get_node("outputs").get_child(output)
-				if w[0] == 99: # circuit 99 is the OUTPUTS
-					dest_pin = $outputs.get_child(w[1]).get_node("Pin")
-#					newwire.dest_pin_slot = 0
-				else:
-					dest_pin = $nodes.get_child(w[0]).get_node("inputs").get_child(w[1])
-#					newwire.dest_pin_slot = w[1]
+		newwire.attach(orig_pin, dest_pin)
+		$wires.add_child(newwire)
 
-				newwire.attach(orig_pin, dest_pin)
-#				newwire.dest_circuit = dest_pin.get_parent()
-				orig_pin.add_child(newwire)
-			output += 1
-		prev_circuit += 1
+###
 
-# Called when the node enters the scene tree for the first time.
+func _process(delta):
+	get_tree().call_group("tick", "TICK")
+
 func _ready():
-	populate(1)
+
+	logic.probe = $graph
+
+	populate(2)

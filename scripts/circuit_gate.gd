@@ -34,6 +34,16 @@ func load_circuit(n):
 			refresh_inputs(1)
 			refresh_outputs(1)
 			pass
+#		-200:
+#			refresh_name("DC Motor")
+#			refresh_inputs(1)
+#			refresh_outputs(1)
+#			pass
+#		-201:
+#			refresh_name("AC Motor")
+#			refresh_inputs(3)
+#			refresh_outputs(3)
+#			pass
 	circuit = n
 
 func refresh_inputs(pins): # generates number of input pins
@@ -67,11 +77,11 @@ func _process(delta):
 	# basic logic for common gates
 	match circuit:
 		-99: # AND gate
-			var through = true
+			var through = 100
 			for i in $inputs.get_children():
-				if !i.enabled || !i.live:
-					through = false
-			$outputs.get_child(0).live = through
+				if !i.enabled || (i.voltage == 0):
+					through = 0
+			$outputs.get_child(0).voltage = through
 
 		-98: # NOT gate
-			$outputs.get_child(0).live = !$inputs.get_child(0).live
+			$outputs.get_child(0).voltage = !$inputs.get_child(0).voltage

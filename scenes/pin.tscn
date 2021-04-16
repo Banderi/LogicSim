@@ -27,5 +27,29 @@ text = "_/_"
 __meta__ = {
 "_edit_use_anchors_": false
 }
+
+[node name="Label2" type="Label" parent="."]
+margin_left = -20.0865
+margin_top = 22.1155
+margin_right = 37.9135
+margin_bottom = 42.1155
+custom_fonts/font = ExtResource( 2 )
+text = "0"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Label3" type="Label" parent="."]
+margin_left = -20.0865
+margin_top = 36.0965
+margin_right = 37.9135
+margin_bottom = 56.0965
+custom_fonts/font = ExtResource( 2 )
+text = "0"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
 [connection signal="mouse_entered" from="." to="." method="_on_Pin_mouse_entered"]
 [connection signal="mouse_exited" from="." to="." method="_on_Pin_mouse_exited"]

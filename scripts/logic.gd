@@ -1,5 +1,9 @@
 extends Node
 
+var probe = null
+
+var propagation_dropoff = 1
+
 var circuits = {
 	-99: { # AND gate
 		"name": "and",
@@ -22,6 +26,24 @@ var circuits = {
 		],
 		"color": "b82e2e"
 	},
+	-200: {
+		"name": "DC motor",
+		"inputs": [["neutral"]],
+		"outputs": [["live"]]
+	},
+	-201: {
+		"name": "AC motor",
+		"inputs": [
+			["n1"],
+			["n2"],
+			["n3"],
+		],
+		"outputs": [
+			["l1"],
+			["l2"],
+			["l3"]
+		]
+	},
 
 	###
 
@@ -43,19 +65,37 @@ var circuits = {
 		# wires ALWAYS are laid out cascading from inputs to outputs -
 		# will be rearranged automatically if a wire connects to INPUTS
 		"wires": [
-			[ # main inputs
-				[ # input A
-					[0,0],	# wire connects to: circuit 0, input 0
-					[0,1]	# wire connects to: circuit 0, input 1
-				],
-				[ # input B
-					[0,1]	# wire connects to: circuit 0, input 1
-				]
+
+
+
+			[ # wire one
+				[-99,0], [1,0] # from circuit -99 (ouput 0) to circuit 0 (input 0)
 			],
-			[ # circuit 0
-				[ # output 1 (only output)
-					[99,0]	# wire connects to: circuit 99 (OUTPUTS), index 0
-				]
+			[ # wire two
+				[-99,0], [1,1] # from circuit -99 (ouput 0) to circuit 0 (input 1)
+			],
+			[ # wire three
+				[-99,1], [1,0] # from circuit -99 (ouput 1) to circuit 0 (input 1)
+			]
+		]
+	},
+
+	2: { # test2
+		"name": "AC Motor setup",
+		"inputs": [],
+		"outputs": [],
+		"color": "000000",
+		"circuits": [
+			[-201,			# circuit ID (negatives are reserved)
+			 -100, -250],	# circuit position
+			[-999,
+			 -100, 100]		# free floating pin
+		],
+		# wires ALWAYS are laid out cascading from inputs to outputs -
+		# will be rearranged automatically if a wire connects to INPUTS
+		"wires": [
+			[ # wire one
+				[0,0], [1,0] # from circuit 0 (ouput 0) to circuit 1 (input 0)
 			]
 		]
 	}

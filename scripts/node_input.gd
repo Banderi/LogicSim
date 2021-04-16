@@ -2,12 +2,13 @@ extends Node2D
 
 var focused = false
 var live = false
+var tension = 100
 
-# Called when the node enters the scene tree for the first time.
-func _ready():
-	pass # Replace with function body.
+###
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
+func TICK():
+	$Pin.apply_tension(float(live) * tension)
+
 func _process(delta):
 	if live:
 		$ColorRect/ColorRect.color = Color("ff0000")
@@ -26,4 +27,6 @@ func _input(event):
 	if event is InputEventMouseButton && event.button_index == BUTTON_LEFT && !event.pressed:
 		if focused:
 			live = !live
-	$Pin.live = live
+
+func _ready():
+	add_to_group("tick")
