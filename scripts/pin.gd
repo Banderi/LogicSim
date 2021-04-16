@@ -11,7 +11,7 @@ var wires_list = []
 var pin_neighbors = []
 
 var tension_sources = []
-var tension_sources_delegated = []
+var tension_sources_delegated = [] # so that wires update afterwards
 func apply_tension(t):
 	if enabled:
 		tension_sources_delegated.append(t * logic.propagation_dropoff)

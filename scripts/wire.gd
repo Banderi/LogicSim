@@ -28,8 +28,8 @@ func draw_dashed_line(from, to, phase, color, width, dash_length = 5, gap = 2.5,
 	var dash_step = normal * dash_length
 
 #	# bind phase to length of wire
-	while phase > abs(dash_length + gap):
-		phase -= abs(dash_length + gap)
+	while abs(phase) > abs(dash_length + gap):
+		phase = abs(phase) - abs(dash_length + gap)
 
 	# for each step...
 	for s in range(-1, (length/(dash_length + gap)) + 1):
@@ -55,19 +55,25 @@ func TICK():
 
 var phase = 0
 func _process(delta):
-	phase += delta * voltage
+	phase += delta * voltage * 4
 
 func _draw():
+	if (true):
+		var d = abs(voltage)/50
+		draw_dashed_line(
+			orig_pin.get_child(0).global_position + Vector2(10,10),
+			dest_pin.get_child(0).global_position + Vector2(10,10),
+			-phase, Color(d, d, 0, 1), 5,
+			10, 5, false)
+	else:
+		var red = min(max(0,voltage), 100)/100
+		var blue = max(min(0,voltage), -100)/-100
+		draw_dashed_line(
+			orig_pin.get_child(0).global_position + Vector2(10,10),
+			dest_pin.get_child(0).global_position + Vector2(10,10),
+			phase, Color(red, 0, blue, 1), 5,
+			10, 5, false)
 
-	var red = min(max(0,voltage), 100)/100
-	var blue = max(min(0,voltage), -100)/-100
-
-	draw_dashed_line(
-		orig_pin.get_child(0).global_position + Vector2(10,10),
-		dest_pin.get_child(0).global_position + Vector2(10,10),
-#		phase, Color(1, 1, 0, 1), 5, voltage + 5, (voltage + 5) * 0.6, false)
-		phase, Color(red, 0, blue, 1), 5,
-		10, 5, false)
 
 func _ready():
 	add_to_group("wires")

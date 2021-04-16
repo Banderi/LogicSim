@@ -35,7 +35,7 @@ margin_right = 37.9135
 margin_bottom = 42.1155
 custom_fonts/font = ExtResource( 2 )
 text = "0"
-align = 1
+align = 2
 __meta__ = {
 "_edit_use_anchors_": false
 }
