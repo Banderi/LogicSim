@@ -3,36 +3,39 @@
 [ext_resource path="res://scripts/pin.gd" type="Script" id=1]
 [ext_resource path="res://fonts/slkscr_small.tres" type="DynamicFont" id=2]
 
-[node name="Pin" type="ColorRect"]
+[node name="Node2D" type="Node2D"]
+z_index = 2
+z_as_relative = false
+script = ExtResource( 1 )
+
+[node name="Pin" type="ColorRect" parent="."]
 margin_left = -10.0
 margin_top = -10.0
 margin_right = 10.0
 margin_bottom = 10.0
 rect_pivot_offset = Vector2( 20, 20 )
 color = Color( 0, 0, 0, 1 )
-script = ExtResource( 1 )
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="Node2D" type="Node2D" parent="."]
-
 [node name="Label" type="Label" parent="."]
-margin_left = -17.2186
-margin_top = -25.2048
-margin_right = 40.7814
-margin_bottom = -5.2048
+margin_left = -29.3696
+margin_top = -30.5445
+margin_right = 28.6304
+margin_bottom = -10.5445
 custom_fonts/font = ExtResource( 2 )
 text = "_/_"
+align = 1
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
 [node name="Label2" type="Label" parent="."]
-margin_left = -20.0865
-margin_top = 22.1155
-margin_right = 37.9135
-margin_bottom = 42.1155
+margin_left = -30.0865
+margin_top = 12.1155
+margin_right = 27.9135
+margin_bottom = 32.1155
 custom_fonts/font = ExtResource( 2 )
 text = "0"
 align = 2
@@ -41,15 +44,15 @@ __meta__ = {
 }
 
 [node name="Label3" type="Label" parent="."]
-margin_left = -20.0865
-margin_top = 36.0965
-margin_right = 37.9135
-margin_bottom = 56.0965
+margin_left = -30.0865
+margin_top = 26.0965
+margin_right = 27.9135
+margin_bottom = 46.0965
 custom_fonts/font = ExtResource( 2 )
 text = "0"
 align = 1
 __meta__ = {
 "_edit_use_anchors_": false
 }
-[connection signal="mouse_entered" from="." to="." method="_on_Pin_mouse_entered"]
-[connection signal="mouse_exited" from="." to="." method="_on_Pin_mouse_exited"]
+[connection signal="mouse_entered" from="Pin" to="." method="_on_Pin_mouse_entered"]
+[connection signal="mouse_exited" from="Pin" to="." method="_on_Pin_mouse_exited"]

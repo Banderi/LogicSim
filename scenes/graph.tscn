@@ -4,19 +4,38 @@
 [ext_resource path="res://fonts/slkscr_small.tres" type="DynamicFont" id=2]
 
 [node name="graph" type="ColorRect"]
-margin_top = -1.0
-margin_right = 375.0
+margin_right = 500.0
 margin_bottom = 200.0
 color = Color( 0, 0, 0, 0.415686 )
 script = ExtResource( 1 )
 __meta__ = {
+"_edit_lock_": true,
 "_edit_use_anchors_": false
 }
 
-[node name="Label" type="Label" parent="."]
-margin_left = 2.70181
-margin_top = 168.052
-margin_right = 136.702
-margin_bottom = 188.052
-custom_fonts/font = ExtResource( 2 )
+[node name="Label" type="RichTextLabel" parent="."]
+margin_left = 504.789
+margin_top = 7.36975
+margin_right = 872.789
+margin_bottom = 289.37
+custom_fonts/mono_font = ExtResource( 2 )
+custom_fonts/bold_italics_font = ExtResource( 2 )
+custom_fonts/italics_font = ExtResource( 2 )
+custom_fonts/bold_font = ExtResource( 2 )
+custom_fonts/normal_font = ExtResource( 2 )
 text = "probing:"
+scroll_active = false
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Label2" type="Label" parent="."]
+margin_left = 356.0
+margin_top = 221.0
+margin_right = 419.0
+margin_bottom = 248.0
+custom_fonts/font = ExtResource( 2 )
+text = "asd"
+__meta__ = {
+"_edit_use_anchors_": false
+}

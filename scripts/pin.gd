@@ -1,41 +1,49 @@
-extends ColorRect
+extends Node
 
 export(bool) var input = true
 
 var enabled = true
 var focused = false
-#var applied_tension = 0
 var tension = 0
+
+var color = null
 
 var wires_list = []
 var pin_neighbors = []
 
-var tension_sources = []
-var tension_sources_delegated = [] # so that wires update afterwards
-func apply_tension(t):
+func maintain_tension(t, node): # actual source of tension!
 	if enabled:
-		tension_sources_delegated.append(t * logic.propagation_dropoff)
+		tension = t
 
-func TICK():
+var tension_neighbors = []
+func add_tension_from_neighbor(t, node):
+	if enabled:
+		tension_neighbors.append([node, t * logic.propagation_dropoff])
+
+func sum_up_neighbor_tensions():
 	# calculate overall tension applied to this pin
-	var tn = tension_sources.size()
-	var overall_tension = 0
-	for t in tension_sources:
-		overall_tension += t/tn
+	var tn = tension_neighbors.size() + 1
+	var overall_tension = tension / tn
+	for t in tension_neighbors:
+		overall_tension += t[1] / tn
 
 	# actual tension reached
 	if (tn):
 		tension += (overall_tension - tension) * logic.propagation_dropoff
+	print(str(self) + " (pin) : sum_up_neighbor_tensions")
 
+func propagate():
 	if enabled:
 		for p in pin_neighbors:
-			p.apply_tension(overall_tension)
+			p.add_tension_from_neighbor(tension, self)
+	print(str(self) + " (pin) : propagate")
 
+func cleanup_tensions():
 	# reset tension source/sink
 	$Label2.text = str(stepify(tension,0.01))
-	$Label3.text = str(tension_sources.size())
-	tension_sources = tension_sources_delegated
-	tension_sources_delegated = []
+	$Label3.text = str(tension_neighbors.size())
+	tension_neighbors = []
+	print(str(self) + " (pin) : cleanup_tensions")
 
 func _process(delta):
 	$Label.text = "_/_"
@@ -46,14 +54,14 @@ func _process(delta):
 		else:
 			color = Color(0, 0, clamp(tension,-100,0)/-100, 1)
 	else:
-		color = Color("50a090")
-	if focused:
 		color = Color("323232")
+	if focused:
+		color = Color("50a090")
 		$Label.visible = true
 	else:
 		$Label.visible = false
 
-	update()
+	$Pin.color = color
 
 func _on_Pin_mouse_entered():
 	focused = true
@@ -71,4 +79,3 @@ func _input(event):
 
 func _ready():
 	add_to_group("pins")
-	add_to_group("tick")

@@ -32,6 +32,22 @@ func get_pin(c, p, inputs):
 				return $nodes.get_child(c).get_node("inputs").get_child(p)
 			return $nodes.get_child(c).get_node("outputs").get_child(p)
 
+func add_circuit_node(c):
+	match c[0]:
+		-999:
+			var pin = PIN.instance()
+			pin.position = Vector2(c[1], c[2])
+			$nodes.add_child(pin)
+		-201:
+			var motor = ACMOTOR.instance()
+			motor.position = Vector2(c[1], c[2])
+			$nodes.add_child(motor)
+		_:
+			var newgate = GATE.instance()
+			newgate.rect_position = Vector2(c[1], c[2])
+			newgate.load_circuit(c[0])
+			$nodes.add_child(newgate)
+
 func populate(n):
 	depopulate()
 
@@ -51,24 +67,10 @@ func populate(n):
 		newoutput.get_node("Label").text = i[0]
 		$outputs.add_child(newoutput)
 
-	for i in circuitdata["circuits"]: # populate sub-circuits
-		if i[0] == -999:
-			var pin = PIN.instance()
-			pin.position = Vector2(i[1], i[2])
-			$nodes.add_child(pin)
-		elif i[0] <= -200:
-			match i[0]:
-				-201:
-					var motor = ACMOTOR.instance()
-					motor.position = Vector2(i[1], i[2])
-					$nodes.add_child(motor)
-		else:
-			var newgate = GATE.instance()
-			newgate.rect_position = Vector2(i[1], i[2])
-			newgate.load_circuit(i[0])
-			$nodes.add_child(newgate)
+	for c in circuitdata["circuits"]: # populate sub-circuits
+		add_circuit_node(c)
 
-	var prev_circuit = -1
+#	var prev_circuit = -1
 	for w in circuitdata["wires"]: # for every wire
 
 		var newwire = WIRE.instance()
@@ -82,7 +84,21 @@ func populate(n):
 ###
 
 func _process(delta):
-	get_tree().call_group("tick", "TICK")
+
+	print(" >> TICK DONE")
+
+	get_tree().call_group("wires", "TICK")
+
+	get_tree().call_group("pins", "propagate")
+	get_tree().call_group("pins", "sum_up_neighbor_tensions")
+	get_tree().call_group("components", "TICK")
+
+	get_tree().call_group("graph", "refresh_probes")
+
+	get_tree().call_group("pins", "cleanup_tensions")
+
+	print(" >> NEW TICK")
+
 
 func _ready():
 

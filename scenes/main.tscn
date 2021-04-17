@@ -36,5 +36,5 @@ __meta__ = {
 [node name="graph" parent="." instance=ExtResource( 1 )]
 margin_left = 216.334
 margin_top = 16.7921
-margin_right = 711.334
-margin_bottom = 227.792
+margin_right = 716.334
+margin_bottom = 216.792

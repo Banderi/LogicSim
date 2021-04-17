@@ -96,24 +96,24 @@ var circuits = {
 			[-999,
 			 -300, 100],		# free floating pin
 
-			[-999,
-			 -253, -90],		# free floating pin
+#			[-999,
+#			 -253, -90],		# free floating pin
 		],
 		# wires ALWAYS are laid out cascading from inputs to outputs -
 		# will be rearranged automatically if a wire connects to INPUTS
 		"wires": [
-#			[ # wire one
-#				[0,0], [1,0] # from circuit 0 (ouput 0) to circuit 1 (input 0)
-#			],
-#			[[1,0], [2,0]],
-#			[[2,0], [3,0]],
-#			[[3,0], [0,0]],
+			[ # wire one
+				[0,0], [1,0] # from circuit 0 (ouput 0) to circuit 1 (input 0)
+			],
+			[[1,0], [2,0]],
+			[[2,0], [3,0]],
+			[[3,0], [0,0]],
 
-#			[[0,1], [0,1]]
+			[[0,1], [0,1]]
 
-			[[0,0], [4,0]],
-			[[0,1], [4,0]],
-			[[0,2], [4,0]],
+#			[[0,0], [4,0]],
+#			[[0,1], [4,0]],
+#			[[0,2], [4,0]],
 		]
 	}
 }

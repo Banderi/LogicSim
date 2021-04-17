@@ -5,8 +5,15 @@ var dest_pin = null
 #var dest_circuit = null
 #var dest_pin_slot = 0
 
-var speed = 40
+#var speed = 40
 var voltage = 0
+var current = 0
+
+var resistivity = 0.01
+var area = 1
+var length = 0
+
+var resistance = 1
 
 func attach(orig, dest):
 	orig_pin = orig
@@ -46,40 +53,51 @@ func draw_dashed_line(from, to, phase, color, width, dash_length = 5, gap = 2.5,
 
 ###
 
+func update_resist():
+	resistance = resistivity * length / area
+
 func TICK():
-	var dest_voltage = 0
+	voltage = 0
+#	var voltage_drop = 0
 	if dest_pin.enabled && orig_pin.enabled:
-		dest_voltage = dest_pin.tension - orig_pin.tension
-	voltage += (dest_voltage - voltage) * logic.propagation_dropoff
+		voltage = dest_pin.tension - orig_pin.tension
+#	voltage += (voltage_drop - voltage) * logic.propagation_dropoff
+
+#	current = voltage / resistance # WRONG!!!!!
+
+
+
 	update()
+	print(str(self) + " (wire) : TICK")
 
 var phase = 0
 func _process(delta):
-	phase += delta * voltage * 4
+	phase += delta * current * 4
 
 func _draw():
 	if (true):
-		var d = abs(voltage)/50
+		var d = abs(current)/50
 		draw_dashed_line(
-			orig_pin.get_child(0).global_position + Vector2(10,10),
-			dest_pin.get_child(0).global_position + Vector2(10,10),
+			orig_pin.global_position,
+			dest_pin.global_position,
 			-phase, Color(d, d, 0, 1), 5,
 			10, 5, false)
 	else:
 		var red = min(max(0,voltage), 100)/100
 		var blue = max(min(0,voltage), -100)/-100
 		draw_dashed_line(
-			orig_pin.get_child(0).global_position + Vector2(10,10),
-			dest_pin.get_child(0).global_position + Vector2(10,10),
+			orig_pin.global_position,
+			dest_pin.global_position,
 			phase, Color(red, 0, blue, 1), 5,
 			10, 5, false)
 
-
 func _ready():
 	add_to_group("wires")
-	add_to_group("tick")
 	points = [
-		orig_pin.get_child(0).global_position + Vector2(10,10),
-		dest_pin.get_child(0).global_position + Vector2(10,10)
+		orig_pin.global_position,
+		dest_pin.global_position
 	]
 	set_global_position(Vector2())
+
+	length = (orig_pin.global_position - dest_pin.global_position).length()
+	update_resist()
