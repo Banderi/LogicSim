@@ -38,12 +38,13 @@ margin_right = 27.9135
 margin_bottom = 32.1155
 custom_fonts/font = ExtResource( 2 )
 text = "0"
-align = 2
+align = 1
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
 [node name="Label3" type="Label" parent="."]
+visible = false
 margin_left = -30.0865
 margin_top = 26.0965
 margin_right = 27.9135

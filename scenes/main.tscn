@@ -38,3 +38,14 @@ margin_left = 216.334
 margin_top = 16.7921
 margin_right = 716.334
 margin_bottom = 216.792
+
+[node name="Button" type="Button" parent="."]
+margin_left = 1119.83
+margin_top = 950.305
+margin_right = 1242.83
+margin_bottom = 998.305
+text = "GO"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+[connection signal="pressed" from="Button" to="." method="_on_Button_pressed"]

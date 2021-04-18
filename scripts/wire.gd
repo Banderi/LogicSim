@@ -13,7 +13,7 @@ var resistivity = 0.01
 var area = 1
 var length = 0
 
-var resistance = 1
+var resistance = 0
 
 func attach(orig, dest):
 	orig_pin = orig
@@ -72,11 +72,13 @@ func TICK():
 
 var phase = 0
 func _process(delta):
-	phase += delta * current * 4
+	phase += 0.01 * voltage * 4
+	if voltage == 0:
+		phase = 0
 
 func _draw():
 	if (true):
-		var d = abs(current)/50
+		var d = abs(voltage)/50
 		draw_dashed_line(
 			orig_pin.global_position,
 			dest_pin.global_position,
@@ -100,4 +102,4 @@ func _ready():
 	set_global_position(Vector2())
 
 	length = (orig_pin.global_position - dest_pin.global_position).length()
-	update_resist()
+#	update_resist()

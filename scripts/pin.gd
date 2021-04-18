@@ -2,8 +2,16 @@ extends Node
 
 export(bool) var input = true
 
+# tension source
+export(bool) var is_source = false
+export var tension_speed = 1
+export var tension_amplitude = 20
+export var tension_source = 0
+export var tension_phase = 0
+
 var enabled = true
 var focused = false
+var oldtension = 0
 var tension = 0
 
 var color = null
@@ -11,9 +19,14 @@ var color = null
 var wires_list = []
 var pin_neighbors = []
 
-func maintain_tension(t, node): # actual source of tension!
-	if enabled:
-		tension = t
+func maintain_tension(): # actual source of tension!
+	if enabled && is_source:
+		tension = tension_source + 2 * tension_amplitude * sin(tension_phase * PI / 180)
+
+		# update tension phase
+		tension_phase += logic.simulation_speed * tension_speed * 400
+		while tension_phase >= 360:
+			tension_phase -= 360
 
 var tension_neighbors = []
 func add_tension_from_neighbor(t, node):
@@ -28,6 +41,7 @@ func sum_up_neighbor_tensions():
 		overall_tension += t[1] / tn
 
 	# actual tension reached
+	oldtension = tension
 	if (tn):
 		tension += (overall_tension - tension) * logic.propagation_dropoff
 	print(str(self) + " (pin) : sum_up_neighbor_tensions")
@@ -50,9 +64,9 @@ func _process(delta):
 	if enabled:
 		$Label.text = "___"
 		if tension > 0:
-			color = Color(clamp(tension,0,100)/100, 0, 0, 1)
+			color = Color(clamp(tension,0,100)/50, 0, 0, 1)
 		else:
-			color = Color(0, 0, clamp(tension,-100,0)/-100, 1)
+			color = Color(0, 0, clamp(tension,-100,0)/-50, 1)
 	else:
 		color = Color("323232")
 	if focused:
@@ -79,3 +93,4 @@ func _input(event):
 
 func _ready():
 	add_to_group("pins")
+	add_to_group("sources")

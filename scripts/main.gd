@@ -6,7 +6,7 @@ const GATE = preload("res://scenes/circuit_gate.tscn")
 const WIRE = preload("res://scenes/wire.tscn")
 const PIN = preload("res://scenes/free_pin.tscn")
 
-const ACMOTOR = preload("res://scenes/ac_motor.tscn")
+const ACGEN = preload("res://scenes/ac_generator.tscn")
 
 ####
 
@@ -39,9 +39,9 @@ func add_circuit_node(c):
 			pin.position = Vector2(c[1], c[2])
 			$nodes.add_child(pin)
 		-201:
-			var motor = ACMOTOR.instance()
-			motor.position = Vector2(c[1], c[2])
-			$nodes.add_child(motor)
+			var ac = ACGEN.instance()
+			ac.position = Vector2(c[1], c[2])
+			$nodes.add_child(ac)
 		_:
 			var newgate = GATE.instance()
 			newgate.rect_position = Vector2(c[1], c[2])
@@ -83,21 +83,25 @@ func populate(n):
 
 ###
 
+var go = true
 func _process(delta):
 
-	print(" >> TICK DONE")
+	if (go):
+		print(" >> TICK DONE")
 
-	get_tree().call_group("wires", "TICK")
+		get_tree().call_group("wires", "TICK")
 
-	get_tree().call_group("pins", "propagate")
-	get_tree().call_group("pins", "sum_up_neighbor_tensions")
-	get_tree().call_group("components", "TICK")
+		get_tree().call_group("pins", "propagate")
+		get_tree().call_group("pins", "sum_up_neighbor_tensions")
 
-	get_tree().call_group("graph", "refresh_probes")
+		get_tree().call_group("sources", "maintain_tension")
 
-	get_tree().call_group("pins", "cleanup_tensions")
+		get_tree().call_group("graph", "refresh_probes")
 
-	print(" >> NEW TICK")
+		get_tree().call_group("pins", "cleanup_tensions")
+
+		print(" >> NEW TICK")
+#		go = false
 
 
 func _ready():
@@ -105,3 +109,7 @@ func _ready():
 	logic.probe = $graph
 
 	populate(2)
+
+
+func _on_Button_pressed():
+	go = true

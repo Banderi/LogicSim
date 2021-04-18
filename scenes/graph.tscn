@@ -26,14 +26,99 @@ custom_fonts/normal_font = ExtResource( 2 )
 text = "probing:"
 scroll_active = false
 __meta__ = {
+"_edit_lock_": true,
 "_edit_use_anchors_": false
 }
 
-[node name="Label2" type="Label" parent="."]
-margin_left = 356.0
-margin_top = 221.0
-margin_right = 419.0
-margin_bottom = 248.0
+[node name="Labels" type="Node2D" parent="."]
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="Label" type="Label" parent="Labels"]
+margin_right = 63.0
+margin_bottom = 27.0
+custom_fonts/font = ExtResource( 2 )
+text = "asd"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Label2" type="Label" parent="Labels"]
+margin_right = 63.0
+margin_bottom = 27.0
+custom_fonts/font = ExtResource( 2 )
+text = "asd"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Label3" type="Label" parent="Labels"]
+margin_right = 63.0
+margin_bottom = 27.0
+custom_fonts/font = ExtResource( 2 )
+text = "asd"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Label4" type="Label" parent="Labels"]
+margin_right = 63.0
+margin_bottom = 27.0
+custom_fonts/font = ExtResource( 2 )
+text = "asd"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Label5" type="Label" parent="Labels"]
+margin_right = 63.0
+margin_bottom = 27.0
+custom_fonts/font = ExtResource( 2 )
+text = "asd"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Label6" type="Label" parent="Labels"]
+margin_right = 63.0
+margin_bottom = 27.0
+custom_fonts/font = ExtResource( 2 )
+text = "asd"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Label7" type="Label" parent="Labels"]
+margin_right = 63.0
+margin_bottom = 27.0
+custom_fonts/font = ExtResource( 2 )
+text = "asd"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Label8" type="Label" parent="Labels"]
+margin_right = 63.0
+margin_bottom = 27.0
+custom_fonts/font = ExtResource( 2 )
+text = "asd"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Label9" type="Label" parent="Labels"]
+margin_right = 63.0
+margin_bottom = 27.0
+custom_fonts/font = ExtResource( 2 )
+text = "asd"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Label10" type="Label" parent="Labels"]
+margin_right = 63.0
+margin_bottom = 27.0
 custom_fonts/font = ExtResource( 2 )
 text = "asd"
 __meta__ = {
