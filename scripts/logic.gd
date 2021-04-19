@@ -5,6 +5,25 @@ var probe = null
 var propagation_dropoff = 1
 var simulation_speed = 0.01
 
+var colors_tens = [
+	Color(0,0,1,1),				# low tension
+	Color(0.36,0.36,0.36,1),	# neutral
+	Color(1,0,0,1),				# high tension
+
+	Color("323232"),	# disabled
+	Color("50a090")		# focused
+]
+var colors_falloff = 10
+func get_tension_color(tension):
+	var t = abs(tension / colors_falloff)
+	var color
+	if tension < 0:
+		color = colors_tens[0] * min(1, t) + colors_tens[1] * max(0, 0 - t)
+	else:
+		color = colors_tens[2] * min(1, t) + colors_tens[1] * max(0, 1 - t)
+	color.a = 1
+	return color
+
 var network_resistances = {}
 var networks_by_component = {}
 
@@ -32,8 +51,6 @@ func get_total_network_resistance(node):
 		compute_network_resistances(node, 0)
 		NETWORK_RESET = false
 	return network_resistances[networks_by_component[node]]
-
-
 
 var circuits = {
 	-99: { # AND gate
@@ -155,22 +172,29 @@ var circuits = {
 		"color": "000000",
 		"circuits": [
 			# free floating pins
-			[-999, Vector2(-300, -100), 100],
-			[-999, Vector2(-300, 0)],
-			[-999, Vector2(-300, 100), -100],
+			[-999, Vector2(-400, -200), 100],
+			[-999, Vector2(-400, -100)],
+			[-999, Vector2(-400, 0), -100],
 
-			[-999, Vector2(0, -100), 50],
-			[-999, Vector2(0, 0)],
-			[-999, Vector2(0, 100), 0],
+			[-999, Vector2(-100, -200), 50],
+			[-999, Vector2(-100, -100)],
+			[-999, Vector2(-100, 0), 0],
 		],
 		"wires": [
-			[[0,0], [1,0], 1], # from circuit 0 (ouput 0) to circuit 1 (input 0)
-			[[1,0], [2,0], 1],
+			[[0,0], [1,0], 100], # from circuit 0 (ouput 0) to circuit 1 (input 0)
+			[[1,0], [2,0], 100],
 
-			[[3,0], [4,0], 1],
-			[[4,0], [5,0], 1],
+			[[3,0], [4,0], 100],
+			[[4,0], [5,0], 100],
 
-			[[1,0], [4,0], 1],
+			[[1,0], [4,0], 100],
 		]
 	}
 }
+
+#func _ready():
+#	colors_grad = Gradient.instance()
+#	add_child(colors_grad)
+#	colors_grad.add_point(-1, colors_tens[0])
+#	colors_grad.add_point(0, colors_tens[1])
+#	colors_grad.add_point(1, colors_tens[2])

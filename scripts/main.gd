@@ -97,12 +97,13 @@ func _process(delta):
 	if (go):
 		print(" >> TICK DONE")
 
-		get_tree().call_group("wires", "TICK")
 
 		get_tree().call_group("pins", "propagate")
 		get_tree().call_group("pins", "sum_up_neighbor_tensions")
 
 		get_tree().call_group("sources", "maintain_tension")
+
+		get_tree().call_group("wires", "TICK")
 
 		get_tree().call_group("graph", "refresh_probes")
 

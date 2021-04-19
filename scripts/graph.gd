@@ -60,13 +60,17 @@ func refresh_probes():
 	if probing:
 		read(probing.oldtension, voltage_points)
 		read(probing.tension, sap_points)
-		$Label.text = "Probing: " + str(probing)
-		for t in probing.tension_neighbors:
-			$Label.text += "\n" + str(t[0]) + " > " + str(stepify(t[1],0.01))
+#		$Label.text = "Probing: " + str(probing)
+#		for t in probing.tension_neighbors:
+#			$Label.text += "\n" + str(t[0]) + " > " + str(stepify(t[1],0.01))
 	else:
-		$Label.text = "Probing: (nothing)"
+#		$Label.text = "Probing: (nothing)"
 		read(0, voltage_points)
 		read(0, sap_points)
+
+	$Label.text = ""
+	for c in logic.networks_by_component:
+		$Label.text += "\n" + str(c) + " : " + str(logic.networks_by_component[c])
 
 	update()
 	print(str(self) + " (graph) : refresh_probes")

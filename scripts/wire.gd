@@ -29,14 +29,14 @@ func detach():
 	dest_pin.pin_neighbors.erase(orig_pin)
 
 # from https://github.com/juddrgledhill/godot-dashed-line/blob/master/line_harness.gd
-func draw_dashed_line(from, to, phase, color, width, dash_length = 5, gap = 2.5, antialiased = false):
+func draw_dashed_line(from, to, color, width, dash_length = 5, gap = 2.5, antialiased = false):
 	var length = (to - from).length()
 	var normal = (to - from).normalized()
 	var dash_step = normal * dash_length
 
 #	# bind phase to length of wire
-	while abs(phase) > abs(dash_length + gap):
-		phase = abs(phase) - abs(dash_length + gap)
+#	while abs(phase) > abs(dash_length + gap):
+#		phase = abs(phase) - abs(dash_length + gap)
 
 	# for each step...
 	for s in range(-1, (length/(dash_length + gap)) + 1):
@@ -57,20 +57,8 @@ func update_resist():
 	resistance = resistivity * length / area
 
 func conduct_neighboring_tension(t, node):
-
 	# get network's total resistance...
 	var r_total = logic.get_total_network_resistance(self)
-
-#	var checking_list = orig_pin.wires_list
-#	while (checking_list != null):
-#		for w in checking_list:
-#			if !r_checked.has(w):
-#				r_total += w.resistance
-#	for w in orig_pin.wires_list:
-#		r_total += w.resistance
-#	for w in dest_pin.wires_list:
-#		r_total += w.resistance
-
 	var r_bar = (r_total - resistance) / r_total
 
 	if node == orig_pin:
@@ -81,40 +69,44 @@ func conduct_neighboring_tension(t, node):
 		orig_pin.add_tension_from_neighbor(t, node)
 
 func TICK():
+	# update voltage and current
 	voltage = 0
-#	var voltage_drop = 0
 	if dest_pin.enabled && orig_pin.enabled:
-		voltage = dest_pin.tension - orig_pin.tension
-#	voltage += (voltage_drop - voltage) * logic.propagation_dropoff
+		voltage = orig_pin.tension - dest_pin.tension
+	current = voltage / resistance
 
-#	current = voltage / resistance # WRONG!!!!!
-
-
+	$L/Label.text = str(stepify(abs(current),0.001)) + "A"
+	$L/Label.rect_position = (orig_pin.global_position + dest_pin.global_position) / 2
 
 	update()
 	print(str(self) + " (wire) : TICK")
 
 var phase = 0
+var dot_size = 6
+var dot_gap = 25
 func _process(delta):
-	phase += 0.01 * voltage * 4
-	if voltage == 0:
-		phase = 0
+	phase += clamp(current, -0.2, 0.2) * 2000 * delta
+	while phase > dot_size + dot_gap:
+		phase -= (dot_size + dot_gap)
+	while phase < 0:
+		phase += dot_size + dot_gap
 
 func _draw():
 	if (true):
-		var d = abs(voltage)/50
+		gradient.set_color(0, logic.get_tension_color(orig_pin.tension))
+		gradient.set_color(1, logic.get_tension_color(dest_pin.tension))
 		draw_dashed_line(
 			orig_pin.global_position,
 			dest_pin.global_position,
-			-phase, Color(d, d, 0, 1), 5,
-			10, 5, false)
+			Color(1, 1, 0, 1), dot_size,
+			dot_size, dot_gap, false)
 	else:
 		var red = min(max(0,voltage), 100)/100
 		var blue = max(min(0,voltage), -100)/-100
 		draw_dashed_line(
 			orig_pin.global_position,
 			dest_pin.global_position,
-			phase, Color(red, 0, blue, 1), 5,
+			Color(red, 0, blue, 1), 5,
 			10, 5, false)
 
 func _ready():
@@ -124,6 +116,11 @@ func _ready():
 		dest_pin.global_position
 	]
 	set_global_position(Vector2())
+	$Line2D2.points = [
+		orig_pin.global_position,
+		dest_pin.global_position
+	]
+	$Line2D2.set_global_position(Vector2())
 
 	length = (orig_pin.global_position - dest_pin.global_position).length()
 #	update_resist()

@@ -13,6 +13,7 @@ position = Vector2( 743.735, 559.978 )
 position = Vector2( 743.735, 559.978 )
 
 [node name="inputs" type="ColorRect" parent="."]
+visible = false
 margin_left = -117.0
 margin_top = -60.0
 margin_right = 208.0
@@ -23,6 +24,7 @@ __meta__ = {
 }
 
 [node name="outputs" type="ColorRect" parent="."]
+visible = false
 margin_left = 1301.0
 margin_top = -47.0
 margin_right = 1613.0

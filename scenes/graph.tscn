@@ -14,9 +14,9 @@ __meta__ = {
 }
 
 [node name="Label" type="RichTextLabel" parent="."]
-margin_left = 504.789
+margin_left = 558.991
 margin_top = 7.36975
-margin_right = 872.789
+margin_right = 926.991
 margin_bottom = 289.37
 custom_fonts/mono_font = ExtResource( 2 )
 custom_fonts/bold_italics_font = ExtResource( 2 )

@@ -53,11 +53,6 @@ func propagate():
 		var rd = 0
 		for w in wires_list:
 			w.conduct_neighboring_tension(tension, self)
-#			rd += float(w.resistance) / float(wires_list.size())
-#		for p in pin_neighbors:
-##			for w in p.wires_list:
-##				rd += float(w.resistance) / float(p.wires_list.size())
-#			p.add_tension_from_neighbor(tension / (rd * rd), self)
 	print(str(self) + " (pin) : propagate")
 
 func cleanup_tensions():
@@ -72,14 +67,11 @@ func _process(delta):
 	$L/Label.text = "_/_"
 	if enabled:
 		$L/Label.text = "___"
-		if tension > 0:
-			color = Color(clamp(tension,0,100)/50, 0, 0, 1)
-		else:
-			color = Color(0, 0, clamp(tension,-100,0)/-50, 1)
+		color = logic.get_tension_color(tension)
 	else:
-		color = Color("323232")
+		color = logic.colors_tens[3]
 	if focused:
-		color = Color("50a090")
+		color = logic.colors_tens[4]
 		$L/Label.visible = true
 	else:
 		$L/Label.visible = false
