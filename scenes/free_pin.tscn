@@ -12,10 +12,6 @@ __meta__ = {
 }
 
 [node name="Pin" parent="inputs" instance=ExtResource( 1 )]
-margin_left = 0.0
-margin_top = 0.0
-margin_right = 20.0
-margin_bottom = 20.0
 
 [node name="outputs" type="Node2D" parent="."]
 __meta__ = {

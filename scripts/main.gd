@@ -4,7 +4,7 @@ const INPUT = preload("res://scenes/node_input.tscn")
 const OUTPUT = preload("res://scenes/node_output.tscn")
 const GATE = preload("res://scenes/circuit_gate.tscn")
 const WIRE = preload("res://scenes/wire.tscn")
-const PIN = preload("res://scenes/free_pin.tscn")
+const FREEPIN = preload("res://scenes/free_pin.tscn")
 
 const ACGEN = preload("res://scenes/ac_generator.tscn")
 
@@ -35,16 +35,25 @@ func get_pin(c, p, inputs):
 func add_circuit_node(c):
 	match c[0]:
 		-999:
-			var pin = PIN.instance()
-			pin.position = Vector2(c[1], c[2])
-			$nodes.add_child(pin)
+			var freepin = FREEPIN.instance()
+			freepin.position = c[1]
+
+			var pin = freepin.get_child(0).get_child(0)
+
+			if (c.size() > 2): # additional values
+				pin.is_source = true
+				pin.tension_static = float(c[2])
+				pin.tension_amplitude = float(c[3]) if c.size() > 3 else 0
+				pin.tension_speed = float(c[4]) if c.size() > 4 else 0
+				pin.tension_phase = float(c[5]) if c.size() > 5 else 0
+			$nodes.add_child(freepin)
 		-201:
 			var ac = ACGEN.instance()
-			ac.position = Vector2(c[1], c[2])
+			ac.position = c[1]
 			$nodes.add_child(ac)
 		_:
 			var newgate = GATE.instance()
-			newgate.rect_position = Vector2(c[1], c[2])
+			newgate.rect_position = c[1]
 			newgate.load_circuit(c[0])
 			$nodes.add_child(newgate)
 
@@ -70,15 +79,14 @@ func populate(n):
 	for c in circuitdata["circuits"]: # populate sub-circuits
 		add_circuit_node(c)
 
-#	var prev_circuit = -1
 	for w in circuitdata["wires"]: # for every wire
-
 		var newwire = WIRE.instance()
-
 		var orig_pin = get_pin(w[0][0], w[0][1], false)
 		var dest_pin = get_pin(w[1][0], w[1][1], true)
-
 		newwire.attach(orig_pin, dest_pin)
+
+		newwire.resistance = float(w[2]) if w.size() > 2 else 0.01
+
 		$wires.add_child(newwire)
 
 ###
@@ -108,7 +116,7 @@ func _ready():
 
 	logic.probe = $graph
 
-	populate(2)
+	populate(3)
 
 
 func _on_Button_pressed():

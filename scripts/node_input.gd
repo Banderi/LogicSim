@@ -7,7 +7,7 @@ var tension = 100
 ###
 
 func TICK():
-	$Pin.apply_tension(float(live) * tension)
+	$Pin.apply_tension(live * tension)
 
 func _process(delta):
 	if live:

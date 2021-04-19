@@ -18,17 +18,12 @@ __meta__ = {
 
 [node name="Pin" parent="outputs" instance=ExtResource( 3 )]
 position = Vector2( 107.142, -42.8569 )
-is_source = true
-tension_phase = 120
 
 [node name="Pin2" parent="outputs" instance=ExtResource( 3 )]
 position = Vector2( 106.321, 118.101 )
-is_source = true
-tension_phase = 240
 
 [node name="Pin3" parent="outputs" instance=ExtResource( 3 )]
 position = Vector2( -39.338, 39.3971 )
-is_source = true
 
 [node name="inputs" type="Node2D" parent="."]
 __meta__ = {
@@ -37,18 +32,12 @@ __meta__ = {
 
 [node name="Pin" parent="inputs" instance=ExtResource( 3 )]
 position = Vector2( 8.33026, 117.733 )
-is_source = true
-tension_phase = 300
 
 [node name="Pin2" parent="inputs" instance=ExtResource( 3 )]
 position = Vector2( 6.6459, -42.3279 )
-is_source = true
-tension_phase = 60
 
 [node name="Pin3" parent="inputs" instance=ExtResource( 3 )]
 position = Vector2( 150.335, 37.3973 )
-is_source = true
-tension_phase = 180
 
 [node name="Label" type="Label" parent="."]
 anchor_left = 0.5

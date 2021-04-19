@@ -5,15 +5,15 @@ var dest_pin = null
 #var dest_circuit = null
 #var dest_pin_slot = 0
 
-#var speed = 40
-var voltage = 0
-var current = 0
+#var speed = 40.0
+var voltage = 0.0
+var current = 0.0
 
 var resistivity = 0.01
-var area = 1
-var length = 0
+var area = 1.0
+var length = 0.0
 
-var resistance = 0
+var resistance = 1.0
 
 func attach(orig, dest):
 	orig_pin = orig
@@ -55,6 +55,30 @@ func draw_dashed_line(from, to, phase, color, width, dash_length = 5, gap = 2.5,
 
 func update_resist():
 	resistance = resistivity * length / area
+
+func conduct_neighboring_tension(t, node):
+
+	# get network's total resistance...
+	var r_total = logic.get_total_network_resistance(self)
+
+#	var checking_list = orig_pin.wires_list
+#	while (checking_list != null):
+#		for w in checking_list:
+#			if !r_checked.has(w):
+#				r_total += w.resistance
+#	for w in orig_pin.wires_list:
+#		r_total += w.resistance
+#	for w in dest_pin.wires_list:
+#		r_total += w.resistance
+
+	var r_bar = (r_total - resistance) / r_total
+
+	if node == orig_pin:
+		t = t + (dest_pin.tension - t) * r_bar
+		dest_pin.add_tension_from_neighbor(t, node)
+	else:
+		t = t + (orig_pin.tension - t) * r_bar
+		orig_pin.add_tension_from_neighbor(t, node)
 
 func TICK():
 	voltage = 0
