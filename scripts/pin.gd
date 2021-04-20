@@ -46,14 +46,12 @@ func sum_up_neighbor_tensions():
 	oldtension = tension
 	if (tn):
 		tension += (overall_tension - tension) * logic.propagation_dropoff
-	print(str(self) + " (pin) : sum_up_neighbor_tensions")
 
 func propagate():
 	if enabled:
 		var rd = 0
 		for w in wires_list:
 			w.conduct_neighboring_tension(tension, self)
-	print(str(self) + " (pin) : propagate")
 
 func cleanup_tensions():
 	# reset tension source/sink
@@ -61,7 +59,6 @@ func cleanup_tensions():
 	$L/Label2.text = s + str(stepify(tension,0.01)) + "V"
 	$L/Label3.text = str(tension_neighbors.size())
 	tension_neighbors = []
-	print(str(self) + " (pin) : cleanup_tensions")
 
 func _process(delta):
 	$L/Label.text = "_/_"

@@ -34,10 +34,6 @@ func draw_dashed_line(from, to, color, width, dash_length = 5, gap = 2.5, antial
 	var normal = (to - from).normalized()
 	var dash_step = normal * dash_length
 
-#	# bind phase to length of wire
-#	while abs(phase) > abs(dash_length + gap):
-#		phase = abs(phase) - abs(dash_length + gap)
-
 	# for each step...
 	for s in range(-1, (length/(dash_length + gap)) + 1):
 
@@ -79,7 +75,6 @@ func TICK():
 	$L/Label.rect_position = (orig_pin.global_position + dest_pin.global_position) / 2
 
 	update()
-	print(str(self) + " (wire) : TICK")
 
 var phase = 0
 var dot_size = 6
@@ -123,4 +118,3 @@ func _ready():
 	$Line2D2.set_global_position(Vector2())
 
 	length = (orig_pin.global_position - dest_pin.global_position).length()
-#	update_resist()

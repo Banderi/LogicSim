@@ -73,7 +73,6 @@ func refresh_probes():
 		$Label.text += "\n" + str(c) + " : " + str(logic.networks_by_component[c])
 
 	update()
-	print(str(self) + " (graph) : refresh_probes")
 
 func _ready():
 	for p in range(0,1000):

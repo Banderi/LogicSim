@@ -1,7 +1,8 @@
 [gd_scene load_steps=3 format=2]
 
-[ext_resource path="res://scripts/circuit_gate.gd" type="Script" id=1]
+[ext_resource path="res://scripts/logic_gate.gd" type="Script" id=1]
 [ext_resource path="res://fonts/slkscr.tres" type="DynamicFont" id=2]
+
 
 [node name="CIRCUIT" type="ColorRect"]
 margin_right = 250.0

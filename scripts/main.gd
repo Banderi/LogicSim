@@ -95,8 +95,6 @@ var go = true
 func _process(delta):
 
 	if (go):
-		print(" >> TICK DONE")
-
 
 		get_tree().call_group("pins", "propagate")
 		get_tree().call_group("pins", "sum_up_neighbor_tensions")
@@ -109,7 +107,6 @@ func _process(delta):
 
 		get_tree().call_group("pins", "cleanup_tensions")
 
-		print(" >> NEW TICK")
 #		go = false
 
 

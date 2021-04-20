@@ -18,9 +18,13 @@ func get_tension_color(tension):
 	var t = abs(tension / colors_falloff)
 	var color
 	if tension < 0:
-		color = colors_tens[0] * min(1, t) + colors_tens[1] * max(0, 0 - t)
+		color = colors_tens[0] * min(1, t)
+		color += colors_tens[1] * max(0, 1 - t)
+	elif tension > 0:
+		color = colors_tens[2] * min(1, t)
+		color += colors_tens[1] * max(0, 1 - t)
 	else:
-		color = colors_tens[2] * min(1, t) + colors_tens[1] * max(0, 1 - t)
+		color = colors_tens[1]
 	color.a = 1
 	return color
 
@@ -191,10 +195,3 @@ var circuits = {
 		]
 	}
 }
-
-#func _ready():
-#	colors_grad = Gradient.instance()
-#	add_child(colors_grad)
-#	colors_grad.add_point(-1, colors_tens[0])
-#	colors_grad.add_point(0, colors_tens[1])
-#	colors_grad.add_point(1, colors_tens[2])
