@@ -30,35 +30,48 @@ func maintain_tension(): # actual source of tension!
 		while tension_phase >= 360:
 			tension_phase -= 360
 
-var tension_neighbors = []
-func add_tension_from_neighbor(t, node):
-	if enabled:
-		tension_neighbors.append([node, t * logic.propagation_dropoff])
+var tension_neighbors = {}
+func add_tension_from_neighbor(t, node, degree):
+	if enabled && !tension_neighbors.has(node):
+		tension_neighbors[node] = [t * logic.propagation_dropoff, degree]
 
-func sum_up_neighbor_tensions():
+func sum_up_neighbor_tensions(pure_sum = false):
+	var tn = 1
+	var overall_tension = tension
+
 	# calculate overall tension applied to this pin
-	var tn = tension_neighbors.size() + 1
-	var overall_tension = tension / tn
-	for t in tension_neighbors:
-		overall_tension += t[1] / tn
+	if pure_sum:
+		tn = tension_neighbors.size()
+#		overall_tension = tension / tn
+		for t in tension_neighbors:
+			overall_tension += (tension_neighbors[t][0] - tension) / ((tension_neighbors[t][1] + 1) * tn)
+	else:
+		tn = tension_neighbors.size() + 1
+		overall_tension = tension / tn
+		for t in tension_neighbors:
+			overall_tension += tension_neighbors[t][0] / tn
 
 	# actual tension reached
 	oldtension = tension
-	if (tn):
-		tension += (overall_tension - tension) * logic.propagation_dropoff
+	tension = overall_tension
+#	if (tn):
+#		tension += (overall_tension - tension) * logic.propagation_dropoff
 
-func propagate():
+func propagate(instant = false, source_tension = tension, degree = 0, source_node = self):
 	if enabled:
-		var rd = 0
 		for w in wires_list:
-			w.conduct_neighboring_tension(tension, self)
+#			w.conduct_neighboring_tension(tension, self)
+			if (is_source && degree == 0) || (degree > 0 && source_node != self):
+				w.conduct_instant_tension(source_tension, degree, self, source_node)
 
 func cleanup_tensions():
 	# reset tension source/sink
-	var s = "+" if tension > 0 else ""
+	var s = "+" if tension > 0.01 else ""
 	$L/Label2.text = s + str(stepify(tension,0.01)) + "V"
-	$L/Label3.text = str(tension_neighbors.size())
-	tension_neighbors = []
+	$L/Label3.text = ""
+	for t in tension_neighbors:
+		$L/Label3.text += "\n" + str(tension_neighbors[t])
+	tension_neighbors = {}
 
 func _process(delta):
 	$L/Label.text = "_/_"

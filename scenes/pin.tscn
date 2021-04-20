@@ -47,11 +47,10 @@ __meta__ = {
 }
 
 [node name="Label3" type="Label" parent="L"]
-visible = false
-margin_left = -0.716995
-margin_top = 56.6409
-margin_right = 57.283
-margin_bottom = 76.6409
+margin_left = 82.0751
+margin_top = 51.5469
+margin_right = 140.075
+margin_bottom = 121.547
 custom_fonts/font = ExtResource( 2 )
 text = "0"
 align = 1

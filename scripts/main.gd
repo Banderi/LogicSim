@@ -97,7 +97,7 @@ func _process(delta):
 	if (go):
 
 		get_tree().call_group("pins", "propagate")
-		get_tree().call_group("pins", "sum_up_neighbor_tensions")
+		get_tree().call_group("pins", "sum_up_neighbor_tensions", true)
 
 		get_tree().call_group("sources", "maintain_tension")
 

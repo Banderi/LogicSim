@@ -64,6 +64,30 @@ func conduct_neighboring_tension(t, node):
 		t = t + (orig_pin.tension - t) * r_bar
 		orig_pin.add_tension_from_neighbor(t, node)
 
+func conduct_instant_tension(source_tension, falloff_degree, delegate_node, source_node):
+	# get network's total resistance...
+	var r_total = logic.get_total_network_resistance(self)
+#	var r_bar = (r_total - resistance) / r_total
+	var r_bar_inv = r_total / (r_total - resistance)
+
+#	var falloff_coeff = (1-(falloff_degree/(2 + falloff_degree))) #* r_bar
+
+	if delegate_node == orig_pin:
+		if dest_pin.tension_neighbors.has(source_node) || dest_pin == source_node || dest_pin.is_source || !dest_pin.enabled:
+			return
+#		var t = (source_tension - dest_pin.tension) * falloff_coeff
+#		dest_pin.add_tension_from_neighbor(t, source_node, falloff_degree)
+		dest_pin.add_tension_from_neighbor(source_tension, source_node, falloff_degree)
+		dest_pin.propagate(true, source_tension, falloff_degree + 1, source_node)
+
+	else:
+		if orig_pin.tension_neighbors.has(source_node) || orig_pin == source_node || orig_pin.is_source || !orig_pin.enabled:
+			return
+#		var t = (source_tension - orig_pin.tension) * falloff_coeff
+#		orig_pin.add_tension_from_neighbor(t, source_node, falloff_degree)
+		orig_pin.add_tension_from_neighbor(source_tension, source_node, falloff_degree)
+		orig_pin.propagate(true, source_tension, falloff_degree + 1, source_node)
+
 func TICK():
 	# update voltage and current
 	voltage = 0

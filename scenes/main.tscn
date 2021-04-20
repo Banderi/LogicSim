@@ -36,16 +36,16 @@ __meta__ = {
 }
 
 [node name="graph" parent="." instance=ExtResource( 1 )]
-margin_left = 216.334
-margin_top = 16.7921
-margin_right = 716.334
-margin_bottom = 216.792
+margin_left = 9.44185
+margin_top = 11.4872
+margin_right = 509.442
+margin_bottom = 211.487
 
 [node name="Button" type="Button" parent="."]
-margin_left = 1119.83
-margin_top = 950.305
-margin_right = 1242.83
-margin_bottom = 998.305
+margin_left = 21.2223
+margin_top = 226.267
+margin_right = 144.222
+margin_bottom = 274.267
 text = "GO"
 __meta__ = {
 "_edit_use_anchors_": false
