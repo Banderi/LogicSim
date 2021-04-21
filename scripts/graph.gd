@@ -12,6 +12,7 @@ func attach(p, t):
 	data = []
 	probing = p
 	probing_type = t
+	refresh_probes(false)
 
 var label_n = 9
 func read(v, nam, u, col):
@@ -71,6 +72,8 @@ func draw_points(set):
 				Vector2(p2_x, p2_y),
 				col, 1)
 
+var div_t = 0
+var div_split = 50
 func _draw():
 
 	# draw graph container/grid
@@ -82,15 +85,22 @@ func _draw():
 	draw_line(Vector2(250,0), Vector2(250,200), Color(0.4, 0.55, 0.8), 1)
 	draw_line(Vector2(0,100), Vector2(500,100), Color(0.4, 0.55, 0.8), 1)
 
+	# scrolling divider lines
+	for l in range(0, 1000/div_split):
+		var lx = rect_size.x - zoom_x * (l * div_split + div_t)
+		if lx > 0 && lx < 500:
+			draw_line(Vector2(lx,0), Vector2(lx,200), Color(0.4, 0.55, 0.8), 1)
+
 	for set in data:
 		draw_points(set)
 
-func refresh_probes():
+func refresh_probes(tick = true):
 	# reset labels
 	for l in range(0,10):
 		$Labels.get_child(l).visible = false
 	label_n = 9
 
+	# read data from attached nodes
 	if probing:
 		$L/Label.text = "Probing: " + str(probing)
 		match probing_type:
@@ -107,6 +117,11 @@ func refresh_probes():
 	else:
 		$L/Label.text = "Probing: (nothing)"
 
+	# update divider lines tick
+	if tick:
+		div_t += 1
+		if div_t > div_split:
+			div_t -= div_split
 	update()
 
 func _ready():

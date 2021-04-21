@@ -96,10 +96,11 @@ func populate(n):
 ###
 
 func _process(delta):
-
+	if (logic.simulation_go > 0):
+			logic.simulation_go -= 1
 	if (logic.simulation_go != 0):
 
-		for n in range(0,logic.iteration_times):
+		for n in range(0, logic.iteration_times):
 			get_tree().call_group("pins", "propagate")
 			get_tree().call_group("pins", "sum_up_neighbor_tensions")
 			get_tree().call_group("sources", "maintain_tension")
@@ -107,9 +108,6 @@ func _process(delta):
 
 		get_tree().call_group("graph", "refresh_probes")
 		get_tree().call_group("pins", "cleanup_tensions")
-
-		if (logic.simulation_go > 0):
-			logic.simulation_go -= 1
 
 func _ready():
 	populate(3)
@@ -121,4 +119,4 @@ func _on_btn_stop_pressed():
 	logic.simulation_go = 0
 
 func _on_btn_step_pressed():
-	logic.simulation_go += 1
+	logic.simulation_go += 2

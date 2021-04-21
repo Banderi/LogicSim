@@ -48,22 +48,36 @@ margin_bottom = 211.487
 margin_left = 10.0
 margin_top = 220.0
 margin_right = 64.0
-margin_bottom = 246.0
+margin_bottom = 247.0
 text = "stop"
 
 [node name="btn_go" parent="HUD" instance=ExtResource( 2 )]
 margin_left = 100.0
 margin_top = 220.0
 margin_right = 133.0
-margin_bottom = 246.0
+margin_bottom = 247.0
 text = "go"
 
 [node name="btn_step" parent="HUD" instance=ExtResource( 2 )]
 margin_left = 160.0
 margin_top = 220.0
 margin_right = 213.0
-margin_bottom = 246.0
+margin_bottom = 247.0
 text = "step"
+
+[node name="btn_slower" parent="HUD" instance=ExtResource( 2 )]
+margin_left = 10.0
+margin_top = 270.0
+margin_right = 37.0
+margin_bottom = 297.0
+text = "<"
+
+[node name="btn_faster" parent="HUD" instance=ExtResource( 2 )]
+margin_left = 200.0
+margin_top = 270.0
+margin_right = 227.0
+margin_bottom = 297.0
+text = ">"
 [connection signal="pressed" from="HUD/btn_stop" to="." method="_on_btn_stop_pressed"]
 [connection signal="pressed" from="HUD/btn_go" to="." method="_on_btn_go_pressed"]
 [connection signal="pressed" from="HUD/btn_step" to="." method="_on_btn_step_pressed"]

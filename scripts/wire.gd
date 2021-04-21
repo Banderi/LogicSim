@@ -64,21 +64,14 @@ var r_bar = 0.99
 func conduct_neighboring_tension(t, delegate_node):
 	if !is_enabled():
 		return
-	# get network's total resistance...
-#	var r_bar = 0.0
-#	if conductance == 0:
-#		r_bar = 0.0
-#	else:
-	var r_total = logic.get_total_network_resistance(self)
-	r_bar = 1 - (r_total - resistance) / r_total
 
+	# determine which node to send to
 	var target_node = null
 	if delegate_node == orig_pin:
 		target_node = dest_pin
 	else:
 		target_node = orig_pin
 
-	t = t #- target_node.tension #/ pow(resistance, -2) #+ (target_node.tension - t) * r_bar
 	target_node.add_tension_from_neighbor(t, conductance, delegate_node)
 
 func update_conductance():
@@ -103,20 +96,20 @@ func update_conductance():
 	$L/Label.text = str(stepify(abs(resistance),0.001)) + " Ohms"
 	$L/Label.rect_position = (orig_pin.global_position + dest_pin.global_position) / 2
 
-	update()
-
 var phase = 0
 var dot_size = 6
 var dot_gap = 25
 func _process(delta):
 	if logic.simulation_go == -1:
 		phase += clamp(current, -0.2, 0.2) * 2000 * delta
-	else:
+	elif logic.simulation_go != 0:
 		phase += clamp(current, -0.2, 0.2)
 	while phase > dot_size + dot_gap:
 		phase -= (dot_size + dot_gap)
 	while phase < 0:
 		phase += dot_size + dot_gap
+
+	update()
 
 var color_mode = 0
 func _draw():
