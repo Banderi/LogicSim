@@ -85,37 +85,43 @@ func populate(n):
 		var dest_pin = get_pin(w[1][0], w[1][1], true)
 		newwire.attach(orig_pin, dest_pin)
 
-		newwire.resistance = float(w[2]) if w.size() > 2 else 0.01
+		newwire.conductance = float(w[2]) if w.size() > 2 else 1000.0
+		if newwire.conductance == 0:
+			newwire.resistance = "inf"
+		else:
+			newwire.resistance = abs(1/newwire.conductance)
 
 		$wires.add_child(newwire)
 
 ###
 
-var go = true
 func _process(delta):
 
-	if (go):
+	if (logic.simulation_go != 0):
 
-		get_tree().call_group("pins", "propagate")
-		get_tree().call_group("pins", "sum_up_neighbor_tensions", true)
-
-		get_tree().call_group("sources", "maintain_tension")
-
-		get_tree().call_group("wires", "TICK")
+		for n in range(0,logic.iteration_times):
+			get_tree().call_group("pins", "propagate")
+			get_tree().call_group("pins", "sum_up_neighbor_tensions")
+			get_tree().call_group("sources", "maintain_tension")
+			get_tree().call_group("wires", "update_conductance")
 
 		get_tree().call_group("graph", "refresh_probes")
-
 		get_tree().call_group("pins", "cleanup_tensions")
 
-#		go = false
+		if (logic.simulation_go > 0):
+			logic.simulation_go -= 1
 
 
 func _ready():
 
-	logic.probe = $graph
-
 	populate(3)
 
 
-func _on_Button_pressed():
-	go = true
+func _on_btn_go_pressed():
+	logic.simulation_go = -1
+
+func _on_btn_stop_pressed():
+	logic.simulation_go = 0
+
+func _on_btn_step_pressed():
+	logic.simulation_go += 1

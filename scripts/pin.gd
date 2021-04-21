@@ -26,51 +26,39 @@ func maintain_tension(): # actual source of tension!
 		tension = tension_static + 2 * tension_amplitude * sin(tension_phase * PI / 180)
 
 		# update tension phase
-		tension_phase += logic.simulation_speed * tension_speed * 400
+		tension_phase += logic.simulation_speed * tension_speed * 4
 		while tension_phase >= 360:
 			tension_phase -= 360
 
 var tension_neighbors = {}
-func add_tension_from_neighbor(t, node, degree):
+func add_tension_from_neighbor(t, node, source_t = 0, degree = 0):
 	if enabled && !tension_neighbors.has(node):
-		tension_neighbors[node] = [t * logic.propagation_dropoff, degree]
+		tension_neighbors[node] = [t, degree, source_t]
 
-func sum_up_neighbor_tensions(pure_sum = false):
-	var tn = 1
-	var overall_tension = tension
-
+func sum_up_neighbor_tensions():
 	# calculate overall tension applied to this pin
-	if pure_sum:
-		tn = tension_neighbors.size()
-#		overall_tension = tension / tn
-		for t in tension_neighbors:
-			overall_tension += (tension_neighbors[t][0] - tension) / ((tension_neighbors[t][1] + 1) * tn)
-	else:
-		tn = tension_neighbors.size() + 1
-		overall_tension = tension / tn
-		for t in tension_neighbors:
-			overall_tension += tension_neighbors[t][0] / tn
+	var tn = tension_neighbors.size() + 1
+	var overall_tension = tension / tn
+	for t in tension_neighbors:
+		overall_tension += tension_neighbors[t][0] / tn
 
 	# actual tension reached
 	oldtension = tension
-	tension = overall_tension
-#	if (tn):
-#		tension += (overall_tension - tension) * logic.propagation_dropoff
+	var tension_diff = overall_tension - tension
+	if (tn):
+		tension += tension_diff * logic.propagation_dropoff
 
-func propagate(instant = false, source_tension = tension, degree = 0, source_node = self):
+	cleanup_tensions()
+
+func propagate():
 	if enabled:
 		for w in wires_list:
-#			w.conduct_neighboring_tension(tension, self)
-			if (is_source && degree == 0) || (degree > 0 && source_node != self):
-				w.conduct_instant_tension(source_tension, degree, self, source_node)
+			w.conduct_neighboring_tension(tension, self)
 
 func cleanup_tensions():
 	# reset tension source/sink
 	var s = "+" if tension > 0.01 else ""
 	$L/Label2.text = s + str(stepify(tension,0.01)) + "V"
-	$L/Label3.text = ""
-	for t in tension_neighbors:
-		$L/Label3.text += "\n" + str(tension_neighbors[t])
 	tension_neighbors = {}
 
 func _process(delta):
@@ -100,7 +88,7 @@ func _input(event):
 			if event.button_index == BUTTON_LEFT:
 				enabled = !enabled
 			elif event.button_index == BUTTON_RIGHT:
-				logic.probe.attach(self)
+				logic.probe.attach(self, 0)
 
 func _ready():
 	add_to_group("pins")

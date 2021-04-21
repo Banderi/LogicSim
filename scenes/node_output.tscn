@@ -3,6 +3,8 @@
 [ext_resource path="res://scenes/pin.tscn" type="PackedScene" id=1]
 [ext_resource path="res://fonts/slkscr_small.tres" type="DynamicFont" id=2]
 
+
+
 [node name="OUTPUT" type="Node2D"]
 
 [node name="ColorRect" type="ColorRect" parent="."]

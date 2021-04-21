@@ -25,7 +25,7 @@ logic="*res://scripts/logic.gd"
 
 [display]
 
-window/size/width=800
+window/size/height=800
 
 [rendering]
 

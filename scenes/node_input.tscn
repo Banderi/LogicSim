@@ -4,6 +4,8 @@
 [ext_resource path="res://fonts/slkscr_small.tres" type="DynamicFont" id=2]
 [ext_resource path="res://scripts/node_input.gd" type="Script" id=3]
 
+
+
 [node name="INPUT" type="Node2D"]
 script = ExtResource( 3 )
 

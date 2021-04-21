@@ -2,15 +2,17 @@ extends Node
 
 var probe = null
 
-var propagation_dropoff = 1
-var simulation_speed = 0.01
+var propagation_dropoff = 4
+var simulation_speed = 1.0
+var iteration_times = 15
+var simulation_go = -1
 
 var colors_tens = [
 	Color(0,0,1,1),				# low tension
 	Color(0.36,0.36,0.36,1),	# neutral
 	Color(1,0,0,1),				# high tension
 
-	Color("323232"),	# disabled
+	Color("000000"),	# disabled
 	Color("50a090")		# focused
 ]
 var colors_falloff = 10
@@ -38,9 +40,9 @@ func compute_network_resistances(node, network):
 	if !networks_by_component.has(node):
 		networks_by_component[node] = network
 		if network_resistances.has(network):
-			network_resistances[network] += node.resistance
+			network_resistances[network] += abs(node.resistance)
 		else:
-			network_resistances[network] = node.resistance
+			network_resistances[network] = abs(node.resistance)
 
 		# propagate down the tree
 		for w in node.orig_pin.wires_list:
@@ -185,13 +187,13 @@ var circuits = {
 			[-999, Vector2(-100, 0), 0],
 		],
 		"wires": [
-			[[0,0], [1,0], 100], # from circuit 0 (ouput 0) to circuit 1 (input 0)
-			[[1,0], [2,0], 100],
+			[[0,0], [1,0], 0.0001], # from circuit 0 (ouput 0) to circuit 1 (input 0)
+			[[1,0], [2,0], 0.0001],
 
-			[[3,0], [4,0], 100],
-			[[4,0], [5,0], 100],
+			[[3,0], [4,0], 0.0001],
+			[[4,0], [5,0], 0.0001],
 
-			[[1,0], [4,0], 100],
+			[[1,0], [4,0], 0.0001],
 		]
 	}
 }

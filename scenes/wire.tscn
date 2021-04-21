@@ -4,15 +4,47 @@
 [ext_resource path="res://wire_gradient.tres" type="Gradient" id=2]
 [ext_resource path="res://fonts/slkscr_small.tres" type="DynamicFont" id=3]
 
-[node name="Line2D" type="Line2D"]
-z_as_relative = false
+[node name="Node2D" type="Node2D"]
+script = ExtResource( 1 )
+
+[node name="wire" type="Node2D" parent="."]
+rotation = 0.888373
+scale = Vector2( 100, 1 )
+z_index = -2
+
+[node name="bg" type="ColorRect" parent="wire"]
+anchor_top = 0.5
+anchor_bottom = 0.5
+margin_top = -20.0
+margin_right = 1.0
+margin_bottom = 20.0
+mouse_filter = 1
+color = Color( 1, 0, 0, 0 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="bg" type="ColorRect" parent="wire/bg"]
+anchor_top = 0.5
+anchor_bottom = 0.5
+margin_top = -7.0
+margin_right = 1.0
+margin_bottom = 7.0
+mouse_filter = 1
+color = Color( 0.313726, 0.627451, 0.564706, 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Line2D" type="Line2D" parent="."]
+z_index = -1
 points = PoolVector2Array( 269.323, 430.43, 532.711, 608.137, 807.205, 230.509, 1170.55, 663.671 )
 width = 6.0
 default_color = Color( 0.360784, 0.360784, 0.360784, 1 )
 gradient = ExtResource( 2 )
-script = ExtResource( 1 )
 
-[node name="Line2D2" type="Line2D" parent="."]
+[node name="Line2D2" type="Line2D" parent="Line2D"]
+visible = false
 z_index = -1
 z_as_relative = false
 points = PoolVector2Array( 269.323, 430.43, 532.711, 608.137, 807.205, 230.509, 1170.55, 663.671 )
@@ -34,3 +66,5 @@ align = 1
 __meta__ = {
 "_edit_use_anchors_": false
 }
+[connection signal="mouse_entered" from="wire/bg/bg" to="." method="_on_bg_mouse_entered"]
+[connection signal="mouse_exited" from="wire/bg/bg" to="." method="_on_bg_mouse_exited"]

@@ -1,4 +1,4 @@
-extends Line2D
+extends Node2D
 
 var orig_pin = null
 var dest_pin = null
@@ -14,6 +14,14 @@ var area = 1.0
 var length = 0.0
 
 var resistance = 1.0
+var conductance = 1.0
+
+var focused = false
+func _on_bg_mouse_entered():
+	focused = true
+
+func _on_bg_mouse_exited():
+	focused = false
 
 func attach(orig, dest):
 	orig_pin = orig
@@ -49,53 +57,36 @@ func draw_dashed_line(from, to, color, width, dash_length = 5, gap = 2.5, antial
 
 ###
 
-func update_resist():
-	resistance = resistivity * length / area
+#func update_resist():
+#	resistance = resistivity * length / area
 
-func conduct_neighboring_tension(t, node):
+func conduct_neighboring_tension(t, delegate_node):
 	# get network's total resistance...
-	var r_total = logic.get_total_network_resistance(self)
-	var r_bar = (r_total - resistance) / r_total
-
-	if node == orig_pin:
-		t = t + (dest_pin.tension - t) * r_bar
-		dest_pin.add_tension_from_neighbor(t, node)
+	var r_bar = 0.0
+	if conductance == 0:
+		r_bar = 0.0
 	else:
-		t = t + (orig_pin.tension - t) * r_bar
-		orig_pin.add_tension_from_neighbor(t, node)
+		var r_total = logic.get_total_network_resistance(self)
+		r_bar = (r_total - resistance) / r_total
 
-func conduct_instant_tension(source_tension, falloff_degree, delegate_node, source_node):
-	# get network's total resistance...
-	var r_total = logic.get_total_network_resistance(self)
-#	var r_bar = (r_total - resistance) / r_total
-	var r_bar_inv = r_total / (r_total - resistance)
-
-#	var falloff_coeff = (1-(falloff_degree/(2 + falloff_degree))) #* r_bar
-
+	var target_node = null
 	if delegate_node == orig_pin:
-		if dest_pin.tension_neighbors.has(source_node) || dest_pin == source_node || dest_pin.is_source || !dest_pin.enabled:
-			return
-#		var t = (source_tension - dest_pin.tension) * falloff_coeff
-#		dest_pin.add_tension_from_neighbor(t, source_node, falloff_degree)
-		dest_pin.add_tension_from_neighbor(source_tension, source_node, falloff_degree)
-		dest_pin.propagate(true, source_tension, falloff_degree + 1, source_node)
-
+		target_node = dest_pin
 	else:
-		if orig_pin.tension_neighbors.has(source_node) || orig_pin == source_node || orig_pin.is_source || !orig_pin.enabled:
-			return
-#		var t = (source_tension - orig_pin.tension) * falloff_coeff
-#		orig_pin.add_tension_from_neighbor(t, source_node, falloff_degree)
-		orig_pin.add_tension_from_neighbor(source_tension, source_node, falloff_degree)
-		orig_pin.propagate(true, source_tension, falloff_degree + 1, source_node)
+		target_node = orig_pin
 
-func TICK():
+	t = t + (target_node.tension - t) * r_bar
+	target_node.add_tension_from_neighbor(t, delegate_node)
+
+func update_conductance():
 	# update voltage and current
 	voltage = 0
 	if dest_pin.enabled && orig_pin.enabled:
 		voltage = orig_pin.tension - dest_pin.tension
-	current = voltage / resistance
+	current = voltage * conductance
 
-	$L/Label.text = str(stepify(abs(current),0.001)) + "A"
+#	$L/Label.text = str(stepify(abs(current),0.001)) + "A"
+	$L/Label.text = str(stepify(abs(resistance),0.001)) + " Ohms"
 	$L/Label.rect_position = (orig_pin.global_position + dest_pin.global_position) / 2
 
 	update()
@@ -104,41 +95,58 @@ var phase = 0
 var dot_size = 6
 var dot_gap = 25
 func _process(delta):
-	phase += clamp(current, -0.2, 0.2) * 2000 * delta
+	if logic.simulation_go == -1:
+		phase += clamp(current, -0.2, 0.2) * 2000 * delta
+	else:
+		phase += clamp(current, -0.2, 0.2)
 	while phase > dot_size + dot_gap:
 		phase -= (dot_size + dot_gap)
 	while phase < 0:
 		phase += dot_size + dot_gap
 
+var color_mode = 0
 func _draw():
-	if (true):
-		gradient.set_color(0, logic.get_tension_color(orig_pin.tension))
-		gradient.set_color(1, logic.get_tension_color(dest_pin.tension))
-		draw_dashed_line(
-			orig_pin.global_position,
-			dest_pin.global_position,
-			Color(1, 1, 0, 1), dot_size,
-			dot_size, dot_gap, false)
-	else:
-		var red = min(max(0,voltage), 100)/100
-		var blue = max(min(0,voltage), -100)/-100
-		draw_dashed_line(
-			orig_pin.global_position,
-			dest_pin.global_position,
-			Color(red, 0, blue, 1), 5,
-			10, 5, false)
+
+	$wire/bg/bg.color.a = int(focused)
+
+	match color_mode:
+		0:
+			if !orig_pin.enabled || !dest_pin.enabled:
+				$Line2D.gradient.set_color(0, Color())
+				$Line2D.gradient.set_color(1, Color())
+			else:
+				$Line2D.gradient.set_color(0, logic.get_tension_color(orig_pin.tension))
+				$Line2D.gradient.set_color(1, logic.get_tension_color(dest_pin.tension))
+			draw_dashed_line(
+				orig_pin.global_position,
+				dest_pin.global_position,
+				Color(1, 1, 0, 1), dot_size,
+				dot_size, dot_gap, false)
+		1:
+			var red = min(max(0,voltage), 100)/100
+			var blue = max(min(0,voltage), -100)/-100
+			draw_dashed_line(
+				orig_pin.global_position,
+				dest_pin.global_position,
+				Color(red, 0, blue, 1), 5,
+				10, 5, false)
 
 func _ready():
 	add_to_group("wires")
-	points = [
-		orig_pin.global_position,
-		dest_pin.global_position
-	]
-	set_global_position(Vector2())
-	$Line2D2.points = [
-		orig_pin.global_position,
-		dest_pin.global_position
-	]
-	$Line2D2.set_global_position(Vector2())
 
+	set_global_position(Vector2())
 	length = (orig_pin.global_position - dest_pin.global_position).length()
+
+	$wire.set_global_position(orig_pin.global_position)
+	$wire.rotation = orig_pin.global_position.angle_to_point(dest_pin.global_position) + PI
+	$wire.scale[0] = length
+	$Line2D.points = [
+		orig_pin.global_position,
+		dest_pin.global_position
+	]
+
+func _input(event):
+	if focused:
+		if event is InputEventMouseButton && !event.pressed:
+			if event.button_index == BUTTON_RIGHT:
+				logic.probe.attach(self, 1)
