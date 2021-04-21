@@ -31,16 +31,24 @@ func maintain_tension(): # actual source of tension!
 			tension_phase -= 360
 
 var tension_neighbors = {}
-func add_tension_from_neighbor(t, node, source_t = 0, degree = 0):
+func add_tension_from_neighbor(t, conductance, node, source_t = 0, degree = 0):
 	if enabled && !tension_neighbors.has(node):
-		tension_neighbors[node] = [t, degree, source_t]
+		tension_neighbors[node] = [t, conductance, degree, source_t]
 
 func sum_up_neighbor_tensions():
-	# calculate overall tension applied to this pin
-	var tn = tension_neighbors.size() + 1
-	var overall_tension = tension / tn
+	var total_conductance = 0
+	var tn = tension_neighbors.size()
 	for t in tension_neighbors:
-		overall_tension += tension_neighbors[t][0] / tn
+		total_conductance += tension_neighbors[t][1]
+#	var avg_conductance = total_conductance / tn
+
+	# calculate overall tension applied to this pin
+	var overall_tension = 0
+#	if (tn):
+#		overall_tension = tension / total_conductance
+	for t in tension_neighbors:
+		var data = tension_neighbors[t]
+		overall_tension += (data[0] * data[1]) / total_conductance
 
 	# actual tension reached
 	oldtension = tension
@@ -87,6 +95,7 @@ func _input(event):
 		if event is InputEventMouseButton && !event.pressed:
 			if event.button_index == BUTTON_LEFT:
 				enabled = !enabled
+				logic.NETWORK_RESET = true
 			elif event.button_index == BUTTON_RIGHT:
 				logic.probe.attach(self, 0)
 

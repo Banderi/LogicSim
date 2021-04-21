@@ -111,11 +111,8 @@ func _process(delta):
 		if (logic.simulation_go > 0):
 			logic.simulation_go -= 1
 
-
 func _ready():
-
 	populate(3)
-
 
 func _on_btn_go_pressed():
 	logic.simulation_go = -1

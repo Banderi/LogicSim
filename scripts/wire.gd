@@ -57,17 +57,20 @@ func draw_dashed_line(from, to, color, width, dash_length = 5, gap = 2.5, antial
 
 ###
 
-#func update_resist():
-#	resistance = resistivity * length / area
+func is_enabled():
+	return orig_pin.enabled && dest_pin.enabled
 
+var r_bar = 0.99
 func conduct_neighboring_tension(t, delegate_node):
+	if !is_enabled():
+		return
 	# get network's total resistance...
-	var r_bar = 0.0
-	if conductance == 0:
-		r_bar = 0.0
-	else:
-		var r_total = logic.get_total_network_resistance(self)
-		r_bar = (r_total - resistance) / r_total
+#	var r_bar = 0.0
+#	if conductance == 0:
+#		r_bar = 0.0
+#	else:
+	var r_total = logic.get_total_network_resistance(self)
+	r_bar = 1 - (r_total - resistance) / r_total
 
 	var target_node = null
 	if delegate_node == orig_pin:
@@ -75,10 +78,21 @@ func conduct_neighboring_tension(t, delegate_node):
 	else:
 		target_node = orig_pin
 
-	t = t + (target_node.tension - t) * r_bar
-	target_node.add_tension_from_neighbor(t, delegate_node)
+	t = t #- target_node.tension #/ pow(resistance, -2) #+ (target_node.tension - t) * r_bar
+	target_node.add_tension_from_neighbor(t, conductance, delegate_node)
 
 func update_conductance():
+	# first, calculate from conductance
+	if conductance == 0:
+		resistance = "inf"
+		return
+	# then, from cable properties
+#	resistance = resistivity * length / area
+	if resistance == 0:
+		conductance = "inf"
+	else:
+		conductance = 1/resistance
+
 	# update voltage and current
 	voltage = 0
 	if dest_pin.enabled && orig_pin.enabled:
@@ -144,6 +158,8 @@ func _ready():
 		orig_pin.global_position,
 		dest_pin.global_position
 	]
+
+	update_conductance()
 
 func _input(event):
 	if focused:
