@@ -90,7 +90,7 @@ func update_conductance():
 	voltage = 0
 	if dest_pin.enabled && orig_pin.enabled:
 		voltage = orig_pin.tension - dest_pin.tension
-	current = voltage * conductance
+	current = (-voltage) * conductance
 
 #	$L/Label.text = str(stepify(abs(current),0.001)) + "A"
 	$L/Label.text = str(stepify(abs(resistance),0.001)) + " Ohms"
@@ -101,9 +101,9 @@ var dot_size = 6
 var dot_gap = 25
 func _process(delta):
 	if logic.simulation_go == -1:
-		phase += clamp(current, -0.2, 0.2) * 2000 * delta
+		phase += clamp(-current, -0.2, 0.2) * 2000 * delta
 	elif logic.simulation_go != 0:
-		phase += clamp(current, -0.2, 0.2)
+		phase += clamp(-current, -0.2, 0.2)
 	while phase > dot_size + dot_gap:
 		phase -= (dot_size + dot_gap)
 	while phase < 0:

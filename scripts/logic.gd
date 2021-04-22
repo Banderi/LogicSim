@@ -30,6 +30,31 @@ func get_tension_color(tension):
 	color.a = 1
 	return color
 
+
+var prefixes = {
+	"pico":		["p",0.000000000001],
+	"nano":		["n",0.000000001],
+	"micro":	["µ",0.000001],
+	"milli":	["m",0.001],
+	"":			["",1.0],
+	"kilo":		["k",1000.0],
+	"mega":		["M",1000000.0],
+	"giga":		["G",1000000000.0],
+	"tera":		["T",1000000000000.0],
+	"peta":		["P",1000000000000000.0],
+}
+func proper(v, u, spaced = false, full_units = false, rectify = 1.0, digits = 0.01):
+	v = v / rectify
+	var proper_str = ""
+	for pr in prefixes:
+		if abs(v) >= prefixes[pr][1] || prefixes[pr][0] == "p":
+			var v_corr = stepify(v/prefixes[pr][1], digits)
+			var units = " " if spaced else ""
+			units += pr if full_units else prefixes[pr][0]
+			units += u
+			proper_str = str(v_corr) + units
+	return proper_str
+
 var circuits = {
 	-99: { # AND gate
 		"name": "and",

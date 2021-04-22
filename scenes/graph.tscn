@@ -118,10 +118,9 @@ margin_left = 41.009
 margin_right = 409.009
 margin_bottom = 289.37
 custom_fonts/normal_font = ExtResource( 3 )
-text = "Probing:
-Voltage: 100 Volts
-Current: 20 mAmps
-Conductance: 0.0001 siemens"
+bbcode_enabled = true
+bbcode_text = "[color=aqua]testetst[/color]"
+text = "testetst"
 scroll_active = false
 __meta__ = {
 "_edit_use_anchors_": false

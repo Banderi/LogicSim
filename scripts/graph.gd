@@ -15,13 +15,15 @@ func attach(p, t):
 	refresh_probes(false)
 
 var label_n = 9
-func read(v, nam, u, col):
+func read(v, nam, u, col, absol = false, rectify = 1.0):
 	# get set from data by name
 	var set = {
 		"name":nam,
 		"color":col,
 		"unit":u,
-		"points":[]
+		"absolute":absol,
+		"rectify":rectify,
+		"points":[],
 	}
 	var found = false
 	for s in data:
@@ -35,6 +37,9 @@ func read(v, nam, u, col):
 	var points = set["points"]
 
 	# add datapoints to set
+	v *= rectify
+	if absol:
+		v = -v
 	var p = 0
 	if str(v) == "inf":
 		points.push_front(v)
@@ -46,9 +51,10 @@ func read(v, nam, u, col):
 
 	# update labels
 	var l = $Labels.get_child(label_n)
-	l.text = str(stepify(v,0.01)) # + " " + set["unit"]
+	l.text = logic.proper(v, "", false, false, rectify)
 	l.rect_position = Vector2(504, clamp(p + 100 - 10,0,190))
 	l.visible = true
+#	l.modulate = col
 	l.modulate.a = float(1)/float(9-label_n+1)
 	label_n -= 1
 
@@ -101,21 +107,26 @@ func refresh_probes(tick = true):
 	label_n = 9
 
 	# read data from attached nodes
+	$L/Label.clear()
 	if probing:
-		$L/Label.text = "Probing: " + str(probing)
+		$L/Label.append_bbcode("Probing: " + str(probing))
 		match probing_type:
 			0:
 				read(probing.tension, "Tension", "Volts", Color(1, 0, 0))
 			1:
 				read(probing.voltage, "Voltage", "Volts", Color(1, 0, 0))
-				read(abs(probing.current * 1000), "Current", "mAmps", Color(1, 1, 0))
+				read(probing.current, "Current", "Amps", Color(1, 1, 0), true, 1000)
 				read(probing.conductance, "Conductance", "Siemens", Color(0, 1, 1))
-				read(probing.resistance, "Resistance", "Ohms", Color(0, 1, 1))
+				read(probing.resistance, "Resistance", "Ohms", Color(1, 0.5, 0))
 
+		$L/Label.append_bbcode("\n")
 		for set in data:
-			$L/Label.text += "\n" + set["name"] + ": " + str(-set["points"][0]) + " " + set["unit"]
+			$L/Label.push_color(set["color"])
+			$L/Label.append_bbcode("\n" + set["name"] + ": ")
+			$L/Label.pop()
+			$L/Label.append_bbcode(logic.proper(-set["points"][0], set["unit"], true, true, set["rectify"], 0.01))
 	else:
-		$L/Label.text = "Probing: (nothing)"
+		$L/Label.append_bbcode("Probing: (nothing)")
 
 	# update divider lines tick
 	if tick:
