@@ -2,9 +2,8 @@ extends Node
 
 var probe = null
 
-var propagation_dropoff = 1
-var simulation_speed = 1.0
-var iteration_times = 15
+var simulation_speed = 0.5
+var iteration_times = 4
 var simulation_go = -1
 
 var colors_tens = [

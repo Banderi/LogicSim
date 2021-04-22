@@ -1,7 +1,13 @@
 extends ColorRect
 
 export(float, 0.5, 10) var zoom_x = 2
-export(float, 0.5, 10) var zoom_y = 1
+export(float, 0.5, 10) var zoom_y = 7
+
+var max_x = rect_size.x
+var max_y = rect_size.y
+
+var max_x_reach = 10000
+var max_y_reach = 10000
 
 var data = []
 
@@ -46,56 +52,92 @@ func read(v, nam, u, col, absol = false, rectify = 1.0):
 	else:
 		p = v - 2*v
 		points.push_front(p)
-	while points.size() > (rect_size.x) / zoom_x + 2:
+	while points.size() > max_x_reach:
 		points.pop_back()
 
 	# update labels
 	var l = $Labels.get_child(label_n)
 	l.text = logic.proper(v, "", false, false, rectify)
-	l.rect_position = Vector2(504, clamp(p + 100 - 10,0,190))
+	l.rect_position = Vector2(max_x + 4, clamp(max_y/2 + zoom_y * p - 10, 0, 190))
 	l.visible = true
-#	l.modulate = col
 	l.modulate.a = float(1)/float(9-label_n+1)
 	label_n -= 1
 
 func draw_points(set):
 	var col = set["color"]
 	var points = set["points"]
-	var x = rect_size.x
-	var y = rect_size.y
-	for i in range(0, points.size() - 2, 1):
-		var p1_x = x - zoom_x * i
-		var p2_x = x - zoom_x * (i + 1)
+#	var line_coords = []
+	for i in range(0, min(points.size() - 2, (2 * max_x / zoom_x) + 1), 1):
+		var p1_x = max(max_x - (zoom_x * logic.simulation_speed) * i, 0)
+		var p2_x = max(max_x - (zoom_x * logic.simulation_speed) * (i + 1), 0)
 
-		var p1_y = zoom_y * clamp(points[i], -101, 101) + y/2
-		var p2_y = zoom_y * clamp(points[i + 1], -101, 101) + y/2
+		var p1_y = clamp(max_y/2 + zoom_y * points[i], -1, max_y + 1)
+		var p2_y = clamp(max_y/2 + zoom_y * points[i + 1], -1, max_y + 1)
 
-		if (points[i] < -100 && points[i + 1] < -100) || (points[i] > 100 && points[i + 1] > 100):
+		if (p1_y < 0 && p2_y < 0) || (p1_y > max_y && p2_y > max_y):
 			pass
 		else:
+#			line_coords.push_back([
+#				Vector2(p1_x, p1_y),
+#				Vector2(p2_x, p2_y)
+#			])
 			draw_line(
 				Vector2(p1_x, p1_y),
 				Vector2(p2_x, p2_y),
 				col, 1)
+#	for l in line_coords:
+#		draw_line(l[0], l[1], col, 1)
+
+var max_zoom_x = 32
+var max_zoom_y = 32
+func zoom_hor(z, parent):
+	if z < 0:
+		zoom_x *= 0.625
+	if z > 0:
+		zoom_x *= 1.6
+#	zoom_x += z
+	zoom_x = clamp(zoom_x, 1, max_zoom_x)
+	update()
+	parent.update()
+func zoom_ver(z, parent):
+	if z < 0:
+		zoom_y *= 0.625
+	if z > 0:
+		zoom_y *= 1.6
+#	zoom_y += z
+	zoom_y = clamp(zoom_y, 0.125, max_zoom_y)
+	update()
+	parent.update()
 
 var div_t = 0
-var div_split = 50
+var div_split_x = 50
+var div_split_y = 100
 func _draw():
+	max_x = rect_size.x
+	max_y = rect_size.y
 
 	# draw graph container/grid
-	draw_line(Vector2(0,0), Vector2(500,0), Color(0.4, 0.55, 0.8), 1)
-	draw_line(Vector2(500,0), Vector2(500,200), Color(0.4, 0.55, 0.8), 1)
-	draw_line(Vector2(500,200), Vector2(0,200), Color(0.4, 0.55, 0.8), 1)
-	draw_line(Vector2(0,200), Vector2(0,0), Color(0.4, 0.55, 0.8), 1)
+	draw_line(Vector2(0,0), Vector2(max_x,0), Color(0.4, 0.55, 0.8), 1)
+	draw_line(Vector2(max_x,0), Vector2(max_x,max_y), Color(0.4, 0.55, 0.8), 1)
+	draw_line(Vector2(max_x,max_y), Vector2(0,max_y), Color(0.4, 0.55, 0.8), 1)
+	draw_line(Vector2(0,max_y), Vector2(0,0), Color(0.4, 0.55, 0.8), 1)
 
-	draw_line(Vector2(250,0), Vector2(250,200), Color(0.4, 0.55, 0.8), 1)
-	draw_line(Vector2(0,100), Vector2(500,100), Color(0.4, 0.55, 0.8), 1)
+	# half grid lines
+	draw_line(Vector2(max_x/2,0), Vector2(max_x/2,max_y), Color(0.4, 0.55, 0.8), 1)
+	draw_line(Vector2(0,max_y/2), Vector2(max_x,max_y/2), Color(0.4, 0.55, 0.8), 1)
 
 	# scrolling divider lines
-	for l in range(0, 1000/div_split):
-		var lx = rect_size.x - zoom_x * (l * div_split + div_t)
-		if lx > 0 && lx < 500:
-			draw_line(Vector2(lx,0), Vector2(lx,200), Color(0.4, 0.55, 0.8), 1)
+	for l in range(0, max_x_reach / div_split_x):
+		var lx = rect_size.x - zoom_x * (l * div_split_x + div_t)
+		if lx > 0 && lx < max_x:
+			draw_line(Vector2(lx, 0), Vector2(lx, max_y), Color(0.4, 0.55, 0.8, 0.5), 1)
+
+	# horizontal divider lines
+	for l in range(1, max_y_reach / (div_split_y * 2)):
+		var ly = zoom_y * (div_split_y * l) # start from center line!
+		if ly > 0 && ly < (max_y / 2):
+			draw_line(Vector2(0, (max_y / 2) - ly), Vector2(max_x, (max_y / 2) - ly), Color(0.4, 0.55, 0.8, 0.5), 1)
+			draw_line(Vector2(0, (max_y / 2) + ly), Vector2(max_x, (max_y / 2) + ly), Color(0.4, 0.55, 0.8, 0.5), 1)
 
 	for set in data:
 		draw_points(set)
@@ -115,7 +157,7 @@ func refresh_probes(tick = true):
 				read(probing.tension, "Tension", "Volts", Color(1, 0, 0))
 			1:
 				read(probing.voltage, "Voltage", "Volts", Color(1, 0, 0))
-				read(probing.current, "Current", "Amps", Color(1, 1, 0), true, 1000)
+				read(probing.current, "Current", "Amps", Color(1, 1, 0), true)
 				read(probing.conductance, "Conductance", "Siemens", Color(0, 1, 1))
 				read(probing.resistance, "Resistance", "Ohms", Color(1, 0.5, 0))
 
@@ -130,9 +172,9 @@ func refresh_probes(tick = true):
 
 	# update divider lines tick
 	if tick:
-		div_t += 1
-		if div_t > div_split:
-			div_t -= div_split
+		div_t += 1 * logic.simulation_speed
+		while div_t > div_split_x:
+			div_t -= div_split_x
 	update()
 
 func _ready():

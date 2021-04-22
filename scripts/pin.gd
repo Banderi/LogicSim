@@ -52,7 +52,7 @@ func sum_up_neighbor_tensions():
 	oldtension = tension
 	var tension_diff = overall_tension - tension
 	if (tn):
-		tension += tension_diff * logic.propagation_dropoff
+		tension += tension_diff
 
 	cleanup_tensions()
 

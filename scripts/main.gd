@@ -109,6 +109,11 @@ func _process(delta):
 		get_tree().call_group("graph", "refresh_probes")
 		get_tree().call_group("pins", "cleanup_tensions")
 
+func _draw():
+	$HUD/graph/Control/scale_x.text = "X scale: " + str(logic.probe.zoom_x)
+	$HUD/graph/Control/scale_y.text = "Y scale: " + str(logic.probe.zoom_y)
+	pass
+
 func _ready():
 	populate(3)
 
@@ -120,3 +125,16 @@ func _on_btn_stop_pressed():
 
 func _on_btn_step_pressed():
 	logic.simulation_go += 2
+
+
+func _on_btn_zoomx_less_pressed():
+	logic.probe.zoom_hor(-1, self)
+
+func _on_btn_zoomx_more_pressed():
+	logic.probe.zoom_hor(1, self)
+
+func _on_btn_zoomy_less_pressed():
+	logic.probe.zoom_ver(-1, self)
+
+func _on_btn_zoomy_more_pressed():
+	logic.probe.zoom_ver(1, self)
