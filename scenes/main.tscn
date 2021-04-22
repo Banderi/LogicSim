@@ -7,12 +7,21 @@
 
 [node name="main" type="Node2D"]
 script = ExtResource( 4 )
+__meta__ = {
+"_edit_lock_": true
+}
 
 [node name="wires" type="Node2D" parent="."]
 position = Vector2( 743.735, 559.978 )
+__meta__ = {
+"_edit_lock_": true
+}
 
 [node name="nodes" type="Node2D" parent="."]
 position = Vector2( 743.735, 559.978 )
+__meta__ = {
+"_edit_lock_": true
+}
 
 [node name="inputs" type="ColorRect" parent="."]
 visible = false
@@ -22,6 +31,7 @@ margin_right = 208.0
 margin_bottom = 1116.0
 color = Color( 0.254902, 0.254902, 0.254902, 1 )
 __meta__ = {
+"_edit_lock_": true,
 "_edit_use_anchors_": false
 }
 
@@ -37,12 +47,11 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="HUD" type="Node2D" parent="."]
+[node name="HUD" type="CanvasLayer" parent="."]
 
 [node name="graph" parent="HUD" instance=ExtResource( 1 )]
 margin_left = 9.0
 margin_top = 11.0
-margin_right = 640.0
 margin_bottom = 270.0
 
 [node name="Control" type="Control" parent="HUD/graph"]
@@ -90,9 +99,9 @@ margin_bottom = 126.0
 text = ">"
 
 [node name="scale_x" type="Label" parent="HUD/graph/Control"]
-margin_left = 501.0
+margin_left = 321.0
 margin_top = 49.0
-margin_right = 621.0
+margin_right = 441.0
 margin_bottom = 79.0
 custom_fonts/font = ExtResource( 6 )
 text = "x scale: 1"
@@ -102,9 +111,9 @@ __meta__ = {
 }
 
 [node name="scale_y" type="Label" parent="HUD/graph/Control"]
-margin_left = 501.0
+margin_left = 321.0
 margin_top = 99.0
-margin_right = 621.0
+margin_right = 441.0
 margin_bottom = 129.0
 custom_fonts/font = ExtResource( 6 )
 text = "y scale: 2"
@@ -114,9 +123,9 @@ __meta__ = {
 }
 
 [node name="btn_zoomx_less" parent="HUD/graph/Control" instance=ExtResource( 2 )]
-margin_left = 401.0
+margin_left = 271.0
 margin_top = 49.0
-margin_right = 428.0
+margin_right = 298.0
 margin_bottom = 76.0
 text = "<"
 
@@ -128,9 +137,9 @@ margin_bottom = 76.0
 text = ">"
 
 [node name="btn_zoomy_less" parent="HUD/graph/Control" instance=ExtResource( 2 )]
-margin_left = 401.0
+margin_left = 271.0
 margin_top = 99.0
-margin_right = 428.0
+margin_right = 298.0
 margin_bottom = 126.0
 text = "<"
 
@@ -140,6 +149,10 @@ margin_top = 99.0
 margin_right = 478.0
 margin_bottom = 126.0
 text = ">"
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2( 440, 380 )
+current = true
 [connection signal="pressed" from="HUD/graph/Control/btn_stop" to="." method="_on_btn_stop_pressed"]
 [connection signal="pressed" from="HUD/graph/Control/btn_go" to="." method="_on_btn_go_pressed"]
 [connection signal="pressed" from="HUD/graph/Control/btn_step" to="." method="_on_btn_step_pressed"]

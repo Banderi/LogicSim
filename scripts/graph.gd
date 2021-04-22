@@ -1,6 +1,6 @@
 extends ColorRect
 
-export(float, 0.5, 10) var zoom_x = 2
+export(float, 0.5, 10) var zoom_x = 3.2
 export(float, 0.5, 10) var zoom_y = 7
 
 var max_x = rect_size.x
@@ -15,6 +15,8 @@ var probing = null
 var probing_type = -1
 
 func attach(p, t):
+	if probing == p:
+		return
 	data = []
 	probing = p
 	probing_type = t
@@ -57,8 +59,9 @@ func read(v, nam, u, col, absol = false, rectify = 1.0):
 
 	# update labels
 	var l = $Labels.get_child(label_n)
-	l.text = logic.proper(v, "", false, false, rectify)
-	l.rect_position = Vector2(max_x + 4, clamp(max_y/2 + zoom_y * p - 10, 0, 190))
+#	l.text = logic.proper(v, "", false, false, rectify)
+	l.text = str(stepify((v / rectify), 0.01))
+	l.rect_position = Vector2(max_x + 4, clamp(max_y/2 + zoom_y * p - 10, 0, max_y - 10))
 	l.visible = true
 	l.modulate.a = float(1)/float(9-label_n+1)
 	label_n -= 1
@@ -66,7 +69,6 @@ func read(v, nam, u, col, absol = false, rectify = 1.0):
 func draw_points(set):
 	var col = set["color"]
 	var points = set["points"]
-#	var line_coords = []
 	for i in range(0, min(points.size() - 2, (2 * max_x / zoom_x) + 1), 1):
 		var p1_x = max(max_x - (zoom_x * logic.simulation_speed) * i, 0)
 		var p2_x = max(max_x - (zoom_x * logic.simulation_speed) * (i + 1), 0)
@@ -77,17 +79,13 @@ func draw_points(set):
 		if (p1_y < 0 && p2_y < 0) || (p1_y > max_y && p2_y > max_y):
 			pass
 		else:
-#			line_coords.push_back([
-#				Vector2(p1_x, p1_y),
-#				Vector2(p2_x, p2_y)
-#			])
 			draw_line(
 				Vector2(p1_x, p1_y),
 				Vector2(p2_x, p2_y),
 				col, 1)
-#	for l in line_coords:
-#		draw_line(l[0], l[1], col, 1)
 
+var min_zoom_x = 3.2 # until better optimised....
+var min_zoom_y = 0.125
 var max_zoom_x = 32
 var max_zoom_y = 32
 func zoom_hor(z, parent):
@@ -95,8 +93,7 @@ func zoom_hor(z, parent):
 		zoom_x *= 0.625
 	if z > 0:
 		zoom_x *= 1.6
-#	zoom_x += z
-	zoom_x = clamp(zoom_x, 1, max_zoom_x)
+	zoom_x = stepify(clamp(zoom_x, min_zoom_x, max_zoom_x), 0.1)
 	update()
 	parent.update()
 func zoom_ver(z, parent):
@@ -104,8 +101,7 @@ func zoom_ver(z, parent):
 		zoom_y *= 0.625
 	if z > 0:
 		zoom_y *= 1.6
-#	zoom_y += z
-	zoom_y = clamp(zoom_y, 0.125, max_zoom_y)
+	zoom_y = stepify(clamp(zoom_y, min_zoom_y, max_zoom_y), 0.1)
 	update()
 	parent.update()
 

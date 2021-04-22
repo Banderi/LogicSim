@@ -117,6 +117,30 @@ func _draw():
 func _ready():
 	populate(3)
 
+var drag = false
+var orig_drag_point = Vector2()
+var orig_camera_point = Vector2()
+func _input(event):
+	if event is InputEventMouseButton:
+		if event.button_index == BUTTON_MIDDLE:
+			if event.pressed:
+#			if !drag:
+				orig_drag_point = event.position
+				orig_camera_point = $Camera2D.position
+				drag = true
+			else:
+				drag = false
+				orig_drag_point = Vector2()
+				orig_camera_point = Vector2()
+		if event.button_index == BUTTON_WHEEL_UP:
+			$Camera2D.zoom *= 0.9
+		if event.button_index == BUTTON_WHEEL_DOWN:
+			$Camera2D.zoom *= 1.2
+	if event is InputEventMouseMotion && drag:
+		$Camera2D.position = orig_camera_point + (orig_drag_point - event.position) * $Camera2D.zoom
+	$Camera2D.zoom.x = clamp($Camera2D.zoom.x, 0.4, 10)
+	$Camera2D.zoom.y = clamp($Camera2D.zoom.y, 0.4, 10)
+
 func _on_btn_go_pressed():
 	logic.simulation_go = -1
 
