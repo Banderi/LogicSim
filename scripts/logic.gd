@@ -1,6 +1,7 @@
 extends Node
 
 var probe = null
+var main = null
 
 var simulation_speed = 0.5
 var iteration_times = 4
@@ -196,7 +197,7 @@ var circuits = {
 			[[3,0], [4,0]],
 			[[4,0], [5,0]],
 
-			[[1,0], [4,0]],
+			[[1,0], [4,0], 0.002],
 		]
 	}
 }

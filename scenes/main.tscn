@@ -1,7 +1,8 @@
-[gd_scene load_steps=5 format=2]
+[gd_scene load_steps=6 format=2]
 
 [ext_resource path="res://scenes/graph.tscn" type="PackedScene" id=1]
 [ext_resource path="res://scenes/button.tscn" type="PackedScene" id=2]
+[ext_resource path="res://scripts/grid.gd" type="Script" id=3]
 [ext_resource path="res://scripts/main.gd" type="Script" id=4]
 [ext_resource path="res://fonts/slkscr_small.tres" type="DynamicFont" id=6]
 
@@ -11,14 +12,24 @@ __meta__ = {
 "_edit_lock_": true
 }
 
+[node name="BACK" type="Control" parent="."]
+anchor_right = 1.0
+anchor_bottom = 1.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="grid" type="Node2D" parent="BACK"]
+z_index = -999
+z_as_relative = false
+script = ExtResource( 3 )
+
 [node name="wires" type="Node2D" parent="."]
-position = Vector2( 743.735, 559.978 )
 __meta__ = {
 "_edit_lock_": true
 }
 
 [node name="nodes" type="Node2D" parent="."]
-position = Vector2( 743.735, 559.978 )
 __meta__ = {
 "_edit_lock_": true
 }
@@ -174,8 +185,34 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
+[node name="bottom_left" type="Control" parent="HUD"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+margin_top = -40.0
+margin_right = 40.0
+__meta__ = {
+"_edit_lock_": true,
+"_edit_use_anchors_": false
+}
+
+[node name="keys" type="Label" parent="HUD/bottom_left"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+margin_left = 10.0
+margin_top = -240.0
+margin_right = 150.0
+margin_bottom = -10.0
+custom_fonts/font = ExtResource( 6 )
+text = "0 0
+d"
+valign = 2
+__meta__ = {
+"_edit_lock_": true,
+"_edit_use_anchors_": false
+}
+
 [node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2( 440, 380 )
+position = Vector2( -260, -220 )
 current = true
 [connection signal="pressed" from="HUD/graph/Control/btn_stop" to="." method="_on_btn_stop_pressed"]
 [connection signal="pressed" from="HUD/graph/Control/btn_go" to="." method="_on_btn_go_pressed"]

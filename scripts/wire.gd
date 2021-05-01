@@ -1,5 +1,7 @@
 extends Node2D
 
+var can_interact = true
+
 var orig_pin = null
 var dest_pin = null
 #var dest_circuit = null
@@ -19,9 +21,12 @@ var conductance = 1.0
 var focused = false
 func _on_bg_mouse_entered():
 	focused = true
+	$L/Label.visible = true
+	logic.main.node_selection = self
 
 func _on_bg_mouse_exited():
 	focused = false
+	$L/Label.visible = false
 
 func attach(orig, dest):
 	orig_pin = orig
@@ -95,15 +100,17 @@ func update_conductance():
 	# update voltage and current
 	voltage = orig_pin.tension - dest_pin.tension
 	if str(conductance) == "inf" && dest_pin.enabled && orig_pin.enabled:
-		if voltage != 0:
+		if abs(voltage) > 0.000001:
 			if voltage > 0:
 				current = "inf"
 			else:
 				current = "-inf"
-		elif orig_pin.tension != orig_pin.oldtension || dest_pin.tension != dest_pin.oldtension:
-			current = "inf" # TODO: figure out direction? not really a priority though...
 		else:
 			current = 0
+#		elif orig_pin.tension != orig_pin.oldtension || dest_pin.tension != dest_pin.oldtension:
+#			current = "inf" # TODO: figure out direction? not really a priority though...
+#		else:
+#			current = 0
 	else:
 		var cond_coeff = conductance
 		if !dest_pin.enabled || !orig_pin.enabled:
@@ -183,6 +190,7 @@ func _ready():
 		dest_pin.global_position
 	]
 
+	$L/Label.visible = false
 	update_conductance()
 
 func _input(event):

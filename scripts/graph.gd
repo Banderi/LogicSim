@@ -53,9 +53,10 @@ func read(v, nam, u, col, absol = false, rectify = 1.0):
 		points.push_front("inf")
 	elif str(v) == "-inf":
 		text_p = -9999
+		l.text = "-inf"
 		if absol:
 			text_p = 9999
-		l.text = "-inf"
+			l.text = "inf"
 		points.push_front("-inf")
 	else:
 		text_p = v * rectify
@@ -169,8 +170,8 @@ func refresh_probes(tick = true):
 			0:
 				read(probing.tension, "Tension", "Volts", Color(1, 0, 0))
 			1:
-				read(probing.voltage, "Voltage", "Volts", Color(1, 0, 0))
 				read(probing.current, "Current", "Amps", Color(1, 1, 0), true)
+				read(probing.voltage, "Voltage", "Volts", Color(1, 0, 0))
 				read(probing.conductance, "Conductance", "Siemens", Color(0, 1, 1))
 				read(probing.resistance, "Resistance", "Ohms", Color(1, 0.5, 0))
 

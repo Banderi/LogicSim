@@ -8,17 +8,20 @@ const FREEPIN = preload("res://scenes/free_pin.tscn")
 
 const ACGEN = preload("res://scenes/ac_generator.tscn")
 
+onready var camera = $Camera2D
+
+var circuitdata = {
+	"name": "",
+	"color": "000000",
+	"inputs": [],
+	"outputs": [],
+	"circuits": [],
+	"wires": []
+}
+
 ####
 
-func depopulate():
-	for n in $inputs.get_children():
-		n.queue_free()
-	for n in $outputs.get_children():
-		n.queue_free()
-	for n in $nodes.get_children():
-		n.queue_free()
-
-func get_pin(c, p, inputs):
+func get_pin(c, p, inputs): # return pin node's handle from circuit C, slot P, input/output side
 	if c == -99:
 		return $inputs.get_child(p).get_node("Pin")
 	elif c == 99:
@@ -32,6 +35,20 @@ func get_pin(c, p, inputs):
 				return $nodes.get_child(c).get_node("inputs").get_child(p)
 			return $nodes.get_child(c).get_node("outputs").get_child(p)
 
+func add_input_node(i):
+	var newinput = INPUT.instance()
+	newinput.position = Vector2(220, i[1])
+	newinput.get_node("Pin").input = true
+	newinput.get_node("Label").text = i[0]
+	$inputs.add_child(newinput)
+	circuitdata["inputs"].push_back(i)
+func add_output_node(o):
+	var newoutput = OUTPUT.instance()
+	newoutput.position = Vector2(-25, o[1])
+	newoutput.get_node("Pin").input = false
+	newoutput.get_node("Label").text = o[0]
+	$outputs.add_child(newoutput)
+	circuitdata["outputs"].push_back(o)
 func add_circuit_node(c):
 	match c[0]:
 		-999:
@@ -56,50 +73,68 @@ func add_circuit_node(c):
 			newgate.rect_position = c[1]
 			newgate.load_circuit(c[0])
 			$nodes.add_child(newgate)
+	circuitdata["circuits"].push_back(c)
+func add_wire_node(w):
+	var newwire = WIRE.instance()
+	var orig_pin = get_pin(w[0][0], w[0][1], false)
+	var dest_pin = get_pin(w[1][0], w[1][1], true)
+	newwire.attach(orig_pin, dest_pin)
 
-func populate(n):
-	depopulate()
+	newwire.conductance = w[2] if w.size() > 2 else "inf"
+	if str(newwire.conductance) == "inf":
+		newwire.resistance = 0
+	else:
+		newwire.conductance = float(w[2])
+		if newwire.conductance == 0:
+			newwire.resistance = "inf"
+		else:
+			newwire.resistance = abs(1/newwire.conductance)
+
+	$wires.add_child(newwire)
+	circuitdata["wires"].push_back(w)
+
+func unload_circuit():
+	circuitdata = {
+		"name": "",
+		"color": "000000",
+		"inputs": [],
+		"outputs": [],
+		"circuits": [],
+		"wires": []
+	}
+	for n in $inputs.get_children():
+		n.free()
+	for n in $outputs.get_children():
+		n.free()
+	for n in $nodes.get_children():
+		n.free()
+	for n in $wires.get_children():
+		n.free()
+func save_circuit(n):
+	logic.circuits[n] = circuitdata
+func load_circuit(n):
+	unload_circuit() # *ALWAYS* depopulate first.
+
+	var to_load_from = logic.circuits[n]
+
+	circuitdata["name"] = to_load_from["name"]
+	circuitdata["color"] = to_load_from["color"]
 
 	# load data for circuit #n
-	var circuitdata = logic.circuits[n]
-	for i in circuitdata["inputs"]: # populate INPUTS
-		var newinput = INPUT.instance()
-		newinput.position = Vector2(220, i[1])
-		newinput.get_node("Pin").input = true
-		newinput.get_node("Label").text = i[0]
-		$inputs.add_child(newinput)
-
-	for i in circuitdata["outputs"]: # populate OUTPUTS
-		var newoutput = OUTPUT.instance()
-		newoutput.position = Vector2(-25, i[1])
-		newoutput.get_node("Pin").input = false
-		newoutput.get_node("Label").text = i[0]
-		$outputs.add_child(newoutput)
-
-	for c in circuitdata["circuits"]: # populate sub-circuits
+	for i in to_load_from["inputs"]: # populate INPUTS
+		add_input_node(i)
+	for o in to_load_from["outputs"]: # populate OUTPUTS
+		add_output_node(o)
+	for c in to_load_from["circuits"]: # populate sub-circuits
 		add_circuit_node(c)
-
-	for w in circuitdata["wires"]: # for every wire
-		var newwire = WIRE.instance()
-		var orig_pin = get_pin(w[0][0], w[0][1], false)
-		var dest_pin = get_pin(w[1][0], w[1][1], true)
-		newwire.attach(orig_pin, dest_pin)
-
-		newwire.conductance = w[2] if w.size() > 2 else "inf"
-		if str(newwire.conductance) == "inf":
-			newwire.resistance = 0
-		else:
-			newwire.conductance = float(w[2])
-			if newwire.conductance == 0:
-				newwire.resistance = "inf"
-			else:
-				newwire.resistance = abs(1/newwire.conductance)
-
-		$wires.add_child(newwire)
+	for w in to_load_from["wires"]: # for every wire
+		add_wire_node(w)
 
 ###
 
 func _process(delta):
+	$BACK/grid.update()
+
 	if (logic.simulation_go > 0):
 			logic.simulation_go -= 1
 	if (logic.simulation_go != 0):
@@ -114,20 +149,34 @@ func _process(delta):
 		get_tree().call_group("pins", "cleanup_tensions")
 
 	$HUD/top_right/FPS.text = str(Performance.get_monitor(Performance.TIME_FPS))
+	$BACK/grid.update()
 
 func _draw():
 	$HUD/graph/Control/scale_x.text = "X scale: " + str(logic.probe.zoom_x)
 	$HUD/graph/Control/scale_y.text = "Y scale: " + str(logic.probe.zoom_y)
-	pass
 
 func _ready():
-	populate(3)
+	logic.main = self
 
+	load_circuit(3)
+	load_circuit(3)
+	load_circuit(3)
+	load_circuit(3)
+	load_circuit(3)
+	save_circuit(3)
+	load_circuit(3)
+
+var node_selection = null
 var drag_button = 0
 var selection_mode = 0
 var orig_drag_point = Vector2()
 var orig_camera_point = Vector2()
 func _input(event):
+	# reset node selection
+	if node_selection != null && !node_selection.focused:
+		node_selection = null
+
+	# update input flags
 	selection_mode = 0
 	if Input.is_action_pressed("ctrl"):
 		selection_mode += 1
@@ -136,6 +185,7 @@ func _input(event):
 	if Input.is_action_pressed("shift"):
 		selection_mode += 4
 
+	# update button flags
 	drag_button = 0
 	if Input.is_action_pressed("mouse_left"):
 		drag_button += 1
@@ -144,25 +194,29 @@ func _input(event):
 	if Input.is_action_pressed("mouse_right"):
 		drag_button += 4
 
+	# update debug key display
+	$HUD/bottom_left/keys.text = str(node_selection) + "\n" + str(drag_button) + " " + str(selection_mode)
+#	$BACK/grid.update()
 
-	if Input.is_action_just_pressed("mouse_middle"):
+	# mouse clicks!
+	if Input.is_action_just_pressed("mouse_middle") || Input.is_action_just_pressed("mouse_left"):
 		orig_drag_point = event.position
-		orig_camera_point = $Camera2D.position
-	if Input.is_action_just_released("mouse_middle"):
+		orig_camera_point = camera.position
+	if Input.is_action_just_released("mouse_middle") || Input.is_action_just_released("mouse_left"):
 		orig_drag_point = Vector2()
 		orig_camera_point = Vector2()
 
 	# camera scrolling and dragging
 	if event is InputEventMouseButton:
 		if event.button_index == BUTTON_WHEEL_UP:
-			$Camera2D.zoom *= 0.9
+			camera.zoom *= 0.9
 		if event.button_index == BUTTON_WHEEL_DOWN:
-			$Camera2D.zoom *= 1.2
+			camera.zoom *= 1.2
 	if event is InputEventMouseMotion:
-		if drag_button == 2:
-			$Camera2D.position = orig_camera_point + (orig_drag_point - event.position) * $Camera2D.zoom
-	$Camera2D.zoom.x = clamp($Camera2D.zoom.x, 0.4, 10)
-	$Camera2D.zoom.y = clamp($Camera2D.zoom.y, 0.4, 10)
+		if drag_button & 2:
+			camera.position = orig_camera_point + (orig_drag_point - event.position) * camera.zoom
+	camera.zoom.x = clamp(camera.zoom.x, 0.4, 10)
+	camera.zoom.y = clamp(camera.zoom.y, 0.4, 10)
 
 func _on_btn_go_pressed():
 	logic.simulation_go = -1

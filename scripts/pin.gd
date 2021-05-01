@@ -39,11 +39,9 @@ func add_tension_from_neighbor(t, conductance, node, source_t = 0, degree = 0):
 
 func sum_up_neighbor_tensions():
 
+	# these (inf conductance sources) have priority over everything else
 	var instant_tension = 0
 	var instant_tension_neighbors = 0
-#	var tn = tension_neighbors.size()
-#	for t in tension_neighbors:
-#		total_neighboring_conductance += tension_neighbors[t][1]
 
 	# calculate total conductance
 	var total_neighboring_conductance = 0
@@ -105,6 +103,7 @@ func _process(delta):
 
 func _on_Pin_mouse_entered():
 	focused = true
+	logic.main.node_selection = self
 
 func _on_Pin_mouse_exited():
 	focused = false
