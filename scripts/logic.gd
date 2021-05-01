@@ -29,7 +29,6 @@ func get_tension_color(tension):
 	color.a = 1
 	return color
 
-
 var prefixes = {
 	"pico":		["p",0.000000000001],
 	"nano":		["n",0.000000001],
@@ -42,8 +41,16 @@ var prefixes = {
 	"tera":		["T",1000000000000.0],
 	"peta":		["P",1000000000000000.0],
 }
-func proper(v, u, spaced = false, full_units = false, rectify = 1.0, digits = 0.01):
-	v = v / rectify
+func proper(v, u, spaced = false, full_units = false, rectify = 1.0, digits = 0.01, absolute = false):
+	if str(v) != "inf" && str(v) != "-inf":
+		v = v / rectify
+		if absolute:
+			v = abs(v)
+	else:
+		if absolute:
+			v = "inf"
+		var units = " " if spaced else ""
+		return v + units + u
 	var proper_str = ""
 	for pr in prefixes:
 		if abs(v) >= prefixes[pr][1] || prefixes[pr][0] == "p":
@@ -183,13 +190,13 @@ var circuits = {
 			[-999, Vector2(-100, 0), 0],
 		],
 		"wires": [
-			[[0,0], [1,0], 0.25], # from circuit 0 (ouput 0) to circuit 1 (input 0)
-			[[1,0], [2,0], 1],
+			[[0,0], [1,0]], # from circuit 0 (ouput 0) to circuit 1 (input 0)
+			[[1,0], [2,0]],
 
-			[[3,0], [4,0], 1],
-			[[4,0], [5,0], 1],
+			[[3,0], [4,0]],
+			[[4,0], [5,0]],
 
-			[[1,0], [4,0], 1],
+			[[1,0], [4,0]],
 		]
 	}
 }

@@ -85,11 +85,15 @@ func populate(n):
 		var dest_pin = get_pin(w[1][0], w[1][1], true)
 		newwire.attach(orig_pin, dest_pin)
 
-		newwire.conductance = float(w[2]) if w.size() > 2 else 1000.0
-		if newwire.conductance == 0:
-			newwire.resistance = "inf"
+		newwire.conductance = w[2] if w.size() > 2 else "inf"
+		if str(newwire.conductance) == "inf":
+			newwire.resistance = 0
 		else:
-			newwire.resistance = abs(1/newwire.conductance)
+			newwire.conductance = float(w[2])
+			if newwire.conductance == 0:
+				newwire.resistance = "inf"
+			else:
+				newwire.resistance = abs(1/newwire.conductance)
 
 		$wires.add_child(newwire)
 
@@ -109,6 +113,8 @@ func _process(delta):
 		get_tree().call_group("graph", "refresh_probes")
 		get_tree().call_group("pins", "cleanup_tensions")
 
+	$HUD/top_right/FPS.text = str(Performance.get_monitor(Performance.TIME_FPS))
+
 func _draw():
 	$HUD/graph/Control/scale_x.text = "X scale: " + str(logic.probe.zoom_x)
 	$HUD/graph/Control/scale_y.text = "Y scale: " + str(logic.probe.zoom_y)
@@ -117,27 +123,44 @@ func _draw():
 func _ready():
 	populate(3)
 
-var drag = false
+var drag_button = 0
+var selection_mode = 0
 var orig_drag_point = Vector2()
 var orig_camera_point = Vector2()
 func _input(event):
+	selection_mode = 0
+	if Input.is_action_pressed("ctrl"):
+		selection_mode += 1
+	if Input.is_action_pressed("alt"):
+		selection_mode += 2
+	if Input.is_action_pressed("shift"):
+		selection_mode += 4
+
+	drag_button = 0
+	if Input.is_action_pressed("mouse_left"):
+		drag_button += 1
+	if Input.is_action_pressed("mouse_middle"):
+		drag_button += 2
+	if Input.is_action_pressed("mouse_right"):
+		drag_button += 4
+
+
+	if Input.is_action_just_pressed("mouse_middle"):
+		orig_drag_point = event.position
+		orig_camera_point = $Camera2D.position
+	if Input.is_action_just_released("mouse_middle"):
+		orig_drag_point = Vector2()
+		orig_camera_point = Vector2()
+
+	# camera scrolling and dragging
 	if event is InputEventMouseButton:
-		if event.button_index == BUTTON_MIDDLE:
-			if event.pressed:
-#			if !drag:
-				orig_drag_point = event.position
-				orig_camera_point = $Camera2D.position
-				drag = true
-			else:
-				drag = false
-				orig_drag_point = Vector2()
-				orig_camera_point = Vector2()
 		if event.button_index == BUTTON_WHEEL_UP:
 			$Camera2D.zoom *= 0.9
 		if event.button_index == BUTTON_WHEEL_DOWN:
 			$Camera2D.zoom *= 1.2
-	if event is InputEventMouseMotion && drag:
-		$Camera2D.position = orig_camera_point + (orig_drag_point - event.position) * $Camera2D.zoom
+	if event is InputEventMouseMotion:
+		if drag_button == 2:
+			$Camera2D.position = orig_camera_point + (orig_drag_point - event.position) * $Camera2D.zoom
 	$Camera2D.zoom.x = clamp($Camera2D.zoom.x, 0.4, 10)
 	$Camera2D.zoom.y = clamp($Camera2D.zoom.y, 0.4, 10)
 
@@ -149,7 +172,6 @@ func _on_btn_stop_pressed():
 
 func _on_btn_step_pressed():
 	logic.simulation_go += 2
-
 
 func _on_btn_zoomx_less_pressed():
 	logic.probe.zoom_hor(-1, self)

@@ -150,6 +150,30 @@ margin_right = 478.0
 margin_bottom = 126.0
 text = ">"
 
+[node name="top_right" type="Control" parent="HUD"]
+anchor_left = 1.0
+anchor_right = 1.0
+margin_left = -40.0
+margin_bottom = 40.0
+__meta__ = {
+"_edit_lock_": true,
+"_edit_use_anchors_": false
+}
+
+[node name="FPS" type="Label" parent="HUD/top_right"]
+anchor_left = 1.0
+anchor_right = 1.0
+margin_left = -54.0
+margin_top = 10.0
+margin_right = -14.0
+margin_bottom = 24.0
+text = "63"
+align = 2
+__meta__ = {
+"_edit_lock_": true,
+"_edit_use_anchors_": false
+}
+
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2( 440, 380 )
 current = true

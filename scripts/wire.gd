@@ -75,10 +75,16 @@ func conduct_neighboring_tension(t, delegate_node):
 	target_node.add_tension_from_neighbor(t, conductance, delegate_node)
 
 func update_conductance():
+	$L/Label.rect_position = (orig_pin.global_position + dest_pin.global_position) / 2
+
 	# first, calculate from conductance
-	if conductance == 0:
+	if str(conductance) == "inf":
+		resistance = 0
+	elif conductance == 0:
 		resistance = "inf"
+		$L/Label.text = "inf Ohms"
 		return
+
 	# then, from cable properties
 #	resistance = resistivity * length / area
 	if resistance == 0:
@@ -87,27 +93,45 @@ func update_conductance():
 		conductance = 1/resistance
 
 	# update voltage and current
-	voltage = 0
-	if dest_pin.enabled && orig_pin.enabled:
-		voltage = orig_pin.tension - dest_pin.tension
-	current = (-voltage) * conductance
+	voltage = orig_pin.tension - dest_pin.tension
+	if str(conductance) == "inf" && dest_pin.enabled && orig_pin.enabled:
+		if voltage != 0:
+			if voltage > 0:
+				current = "inf"
+			else:
+				current = "-inf"
+		elif orig_pin.tension != orig_pin.oldtension || dest_pin.tension != dest_pin.oldtension:
+			current = "inf" # TODO: figure out direction? not really a priority though...
+		else:
+			current = 0
+	else:
+		var cond_coeff = conductance
+		if !dest_pin.enabled || !orig_pin.enabled:
+			cond_coeff = 0
+		current = voltage * cond_coeff
 
 #	$L/Label.text = str(stepify(abs(current),0.001)) + "A"
-	$L/Label.text = str(stepify(abs(resistance),0.001)) + " Ohms"
-	$L/Label.rect_position = (orig_pin.global_position + dest_pin.global_position) / 2
+	if str(resistance) == "inf":
+		$L/Label.text = "inf Ohms"
+	else:
+		$L/Label.text = str(stepify(abs(resistance),0.001)) + " Ohms"
 
 var phase = 0
 var dot_size = 6
 var dot_gap = 25
 func _process(delta):
-	if logic.simulation_go == -1:
-		phase += clamp(-current, -0.2, 0.2) * 2000 * delta
-	elif logic.simulation_go != 0:
-		phase += clamp(-current, -0.2, 0.2)
-	while phase > dot_size + dot_gap:
-		phase -= (dot_size + dot_gap)
-	while phase < 0:
-		phase += dot_size + dot_gap
+	# update phase anim
+	if str(current) == "inf" || str(current) == "-inf":
+		pass
+	else:
+		if logic.simulation_go == -1:
+			phase += clamp(current, -0.2, 0.2) * 2000 * delta
+		elif logic.simulation_go != 0:
+			phase += clamp(current, -0.2, 0.2)
+		while phase > dot_size + dot_gap:
+			phase -= (dot_size + dot_gap)
+		while phase < 0:
+			phase += dot_size + dot_gap
 
 	update()
 
@@ -124,11 +148,18 @@ func _draw():
 			else:
 				$Line2D.gradient.set_color(0, logic.get_tension_color(orig_pin.tension))
 				$Line2D.gradient.set_color(1, logic.get_tension_color(dest_pin.tension))
-			draw_dashed_line(
-				orig_pin.global_position,
-				dest_pin.global_position,
-				Color(1, 1, 0, 1), dot_size,
-				dot_size, dot_gap, false)
+			if str(current) == "inf" || str(current) == "-inf":
+				draw_dashed_line(
+					orig_pin.global_position,
+					dest_pin.global_position,
+					Color(1, 1, 0, 1), dot_size,
+					999999, 0, false)
+			elif current != 0:
+				draw_dashed_line(
+					orig_pin.global_position,
+					dest_pin.global_position,
+					Color(1, 1, 0, 1), dot_size,
+					dot_size, dot_gap, false)
 		1:
 			var red = min(max(0,voltage), 100)/100
 			var blue = max(min(0,voltage), -100)/-100

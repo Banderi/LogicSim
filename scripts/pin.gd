@@ -9,6 +9,8 @@ export var tension_amplitude = 0.0
 export var tension_speed = 0.0
 export var tension_phase = 0.0
 
+export(bool) var can_interact = true
+
 var init_arr = null
 
 var enabled = true
@@ -36,22 +38,40 @@ func add_tension_from_neighbor(t, conductance, node, source_t = 0, degree = 0):
 		tension_neighbors[node] = [t, conductance, degree, source_t]
 
 func sum_up_neighbor_tensions():
+
+	var instant_tension = 0
+	var instant_tension_neighbors = 0
+#	var tn = tension_neighbors.size()
+#	for t in tension_neighbors:
+#		total_neighboring_conductance += tension_neighbors[t][1]
+
 	# calculate total conductance
-	var total_conductance = 0
+	var total_neighboring_conductance = 0
 	var tn = tension_neighbors.size()
 	for t in tension_neighbors:
-		total_conductance += tension_neighbors[t][1]
+		var data = tension_neighbors[t]
+		if str(data[1]) == "inf":
+			instant_tension += data[0]
+			instant_tension_neighbors += 1
+		else:
+			total_neighboring_conductance += data[1]
 
 	# calculate overall tension applied to this pin
 	var overall_tension = 0
-	for t in tension_neighbors:
-		var data = tension_neighbors[t]
-		overall_tension += (data[0] * data[1]) / total_conductance
+	if instant_tension_neighbors > 0:
+		overall_tension = instant_tension / instant_tension_neighbors
+	elif total_neighboring_conductance != 0:
+		for t in tension_neighbors:
+			var data = tension_neighbors[t]
+			if str(data[1]) == "inf":
+				break
+			else:
+				overall_tension += (data[0] * data[1]) / total_neighboring_conductance
 
 	# actual tension reached
 	oldtension = tension
 	var tension_diff = overall_tension - tension
-	if (tn):
+	if (tn > 0):
 		tension += tension_diff
 
 	cleanup_tensions()
@@ -76,7 +96,8 @@ func _process(delta):
 		color = logic.colors_tens[3]
 	if focused:
 		color = logic.colors_tens[4]
-		$L/Label.visible = true
+		if can_interact:
+			$L/Label.visible = true
 	else:
 		$L/Label.visible = false
 
@@ -91,7 +112,7 @@ func _on_Pin_mouse_exited():
 func _input(event):
 	if focused:
 		if event is InputEventMouseButton && !event.pressed:
-			if event.button_index == BUTTON_LEFT:
+			if event.button_index == BUTTON_LEFT && can_interact:
 				enabled = !enabled
 			elif event.button_index == BUTTON_RIGHT:
 				logic.probe.attach(self, 0)

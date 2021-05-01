@@ -1,7 +1,7 @@
 extends ColorRect
 
 export(float, 0.5, 10) var zoom_x = 3.2
-export(float, 0.5, 10) var zoom_y = 7
+export(float, 0.5, 10) var zoom_y = 0.6
 
 var max_x = rect_size.x
 var max_y = rect_size.y
@@ -43,25 +43,32 @@ func read(v, nam, u, col, absol = false, rectify = 1.0):
 		data.append(set)
 
 	var points = set["points"]
+	var l = $Labels.get_child(label_n)
 
 	# add datapoints to set
-	v *= rectify
-	if absol:
-		v = -v
-	var p = 0
+	var text_p = 0
 	if str(v) == "inf":
-		points.push_front(v)
+		text_p = 9999
+		l.text = "inf"
+		points.push_front("inf")
+	elif str(v) == "-inf":
+		text_p = -9999
+		if absol:
+			text_p = 9999
+		l.text = "-inf"
+		points.push_front("-inf")
 	else:
-		p = v - 2*v
-		points.push_front(p)
+		text_p = v * rectify
+		if absol:
+			text_p = abs(text_p)
+		l.text = str(stepify((text_p / rectify), 0.01))
+		points.push_front(v * rectify)
+
 	while points.size() > max_x_reach:
 		points.pop_back()
 
 	# update labels
-	var l = $Labels.get_child(label_n)
-#	l.text = logic.proper(v, "", false, false, rectify)
-	l.text = str(stepify((v / rectify), 0.01))
-	l.rect_position = Vector2(max_x + 4, clamp(max_y/2 + zoom_y * p - 10, 0, max_y - 10))
+	l.rect_position = Vector2(max_x + 4, clamp(max_y/2 - zoom_y * text_p - 10, 0, max_y - 10))
 	l.visible = true
 	l.modulate.a = float(1)/float(9-label_n+1)
 	label_n -= 1
@@ -73,8 +80,17 @@ func draw_points(set):
 		var p1_x = max(max_x - (zoom_x * logic.simulation_speed) * i, 0)
 		var p2_x = max(max_x - (zoom_x * logic.simulation_speed) * (i + 1), 0)
 
-		var p1_y = clamp(max_y/2 + zoom_y * points[i], -1, max_y + 1)
-		var p2_y = clamp(max_y/2 + zoom_y * points[i + 1], -1, max_y + 1)
+		var p = points[i]
+		var p2 = points[i + 1]
+		p = -9999 if str(p) == "inf" else (9999 if str(p) == "-inf" else -p)
+		p2 = -9999 if str(p2) == "inf" else (9999 if str(p2) == "-inf" else -p2)
+
+		if set["absolute"]:
+			p = -abs(p)
+			p2 = -abs(p2)
+
+		var p1_y = clamp(max_y/2 + zoom_y * p, -1, max_y + 1)
+		var p2_y = clamp(max_y/2 + zoom_y * p2, -1, max_y + 1)
 
 		if (p1_y < 0 && p2_y < 0) || (p1_y > max_y && p2_y > max_y):
 			pass
@@ -135,7 +151,8 @@ func _draw():
 			draw_line(Vector2(0, (max_y / 2) - ly), Vector2(max_x, (max_y / 2) - ly), Color(0.4, 0.55, 0.8, 0.5), 1)
 			draw_line(Vector2(0, (max_y / 2) + ly), Vector2(max_x, (max_y / 2) + ly), Color(0.4, 0.55, 0.8, 0.5), 1)
 
-	for set in data:
+	for s in range(0, data.size()):
+		var set = data[data.size() - s - 1]
 		draw_points(set)
 
 func refresh_probes(tick = true):
@@ -162,7 +179,7 @@ func refresh_probes(tick = true):
 			$L/Label.push_color(set["color"])
 			$L/Label.append_bbcode("\n" + set["name"] + ": ")
 			$L/Label.pop()
-			$L/Label.append_bbcode(logic.proper(-set["points"][0], set["unit"], true, true, set["rectify"], 0.01))
+			$L/Label.append_bbcode(logic.proper(set["points"][0], set["unit"], true, true, set["rectify"], 0.01, set["absolute"]))
 	else:
 		$L/Label.append_bbcode("Probing: (nothing)")
 
