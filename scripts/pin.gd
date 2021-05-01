@@ -92,12 +92,11 @@ func _process(delta):
 		color = logic.get_tension_color(tension)
 	else:
 		color = logic.colors_tens[3]
+	$L/Label.visible = false
 	if focused:
 		color = logic.colors_tens[4]
-		if can_interact:
+		if can_interact && !logic.main.selection_mode & 1:
 			$L/Label.visible = true
-	else:
-		$L/Label.visible = false
 
 	$Pin.color = color
 
@@ -108,12 +107,27 @@ func _on_Pin_mouse_entered():
 func _on_Pin_mouse_exited():
 	focused = false
 
+var orig_position = Vector2()
 func _input(event):
 	if focused:
-		if event is InputEventMouseButton && !event.pressed:
-			if event.button_index == BUTTON_LEFT && can_interact:
+		if logic.main.selection_mode & 1:
+			if Input.is_action_just_pressed("mouse_left"):
+				orig_position = get_parent().get_parent().position
+			if event is InputEventMouseMotion && Input.is_action_pressed("mouse_left"):
+				get_parent().get_parent().position = orig_position + (event.position - logic.main.orig_drag_point) * logic.main.camera.zoom
+
+				# grid snapping!
+				if logic.main.selection_mode & 2:
+					var rx = round(get_parent().get_parent().position.x / 50.0) * 50.0
+					var ry = round(get_parent().get_parent().position.y / 50.0) * 50.0
+					get_parent().get_parent().position = Vector2(rx, ry)
+
+				for w in wires_list:
+					w.redraw()
+		else:
+			if Input.is_action_just_released("mouse_left"):
 				enabled = !enabled
-			elif event.button_index == BUTTON_RIGHT:
+			if Input.is_action_just_released("mouse_right"):
 				logic.probe.attach(self, 0)
 
 func _ready():

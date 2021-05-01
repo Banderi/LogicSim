@@ -180,9 +180,9 @@ func _input(event):
 	selection_mode = 0
 	if Input.is_action_pressed("ctrl"):
 		selection_mode += 1
-	if Input.is_action_pressed("alt"):
-		selection_mode += 2
 	if Input.is_action_pressed("shift"):
+		selection_mode += 2
+	if Input.is_action_pressed("alt"):
 		selection_mode += 4
 
 	# update button flags
@@ -196,7 +196,6 @@ func _input(event):
 
 	# update debug key display
 	$HUD/bottom_left/keys.text = str(node_selection) + "\n" + str(drag_button) + " " + str(selection_mode)
-#	$BACK/grid.update()
 
 	# mouse clicks!
 	if Input.is_action_just_pressed("mouse_middle") || Input.is_action_just_pressed("mouse_left"):

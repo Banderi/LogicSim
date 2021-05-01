@@ -176,12 +176,8 @@ func _draw():
 				Color(red, 0, blue, 1), 5,
 				10, 5, false)
 
-func _ready():
-	add_to_group("wires")
-
-	set_global_position(Vector2())
+func redraw():
 	length = (orig_pin.global_position - dest_pin.global_position).length()
-
 	$wire.set_global_position(orig_pin.global_position)
 	$wire.rotation = orig_pin.global_position.angle_to_point(dest_pin.global_position) + PI
 	$wire.scale[0] = length
@@ -189,6 +185,13 @@ func _ready():
 		orig_pin.global_position,
 		dest_pin.global_position
 	]
+
+func _ready():
+	add_to_group("wires")
+
+	set_global_position(Vector2())
+
+	redraw()
 
 	$L/Label.visible = false
 	update_conductance()
