@@ -172,8 +172,8 @@ func refresh_probes(tick = true):
 			1:
 				read(probing.current, "Current", "Amps", Color(1, 1, 0), true)
 				read(probing.voltage, "Voltage", "Volts", Color(1, 0, 0))
-				read(probing.conductance, "Conductance", "Siemens", Color(0, 1, 1))
 				read(probing.resistance, "Resistance", "Ohms", Color(1, 0.5, 0))
+				read(probing.conductance, "Conductance", "Siemens", Color(0, 1, 1))
 
 		$L/Label.append_bbcode("\n")
 		for set in data:

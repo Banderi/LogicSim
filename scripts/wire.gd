@@ -2,6 +2,8 @@ extends Node2D
 
 var can_interact = true
 
+var node_type = -998
+
 var orig_pin = null
 var dest_pin = null
 #var dest_circuit = null

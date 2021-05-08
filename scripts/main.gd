@@ -49,46 +49,53 @@ func add_output_node(o):
 	newoutput.get_node("Label").text = o[0]
 	$outputs.add_child(newoutput)
 	circuitdata["outputs"].push_back(o)
-func add_circuit_node(c):
-	match c[0]:
+func add_circuit_node(id, c): # needed for in-game circuit spawn
+	match id:
 		-999:
-			var freepin = FREEPIN.instance()
-			freepin.position = c[1]
-
-			var pin = freepin.get_child(0).get_child(0)
-
-			if (c.size() > 2): # additional values
-				pin.is_source = true
-				pin.tension_static = float(c[2])
-				pin.tension_amplitude = float(c[3]) if c.size() > 3 else 0
-				pin.tension_speed = float(c[4]) if c.size() > 4 else 0
-				pin.tension_phase = float(c[5]) if c.size() > 5 else 0
-			$nodes.add_child(freepin)
+			add_freepin_node(c)
+		-998:
+			add_wire_based_node(id, c)
 		-201:
 			var ac = ACGEN.instance()
-			ac.position = c[1]
+			ac.position = c[0]
 			$nodes.add_child(ac)
 		_:
 			var newgate = GATE.instance()
-			newgate.rect_position = c[1]
-			newgate.load_circuit(c[0])
+			newgate.rect_position = c[0]
+			newgate.load_circuit(id)
 			$nodes.add_child(newgate)
 	circuitdata["circuits"].push_back(c)
-func add_wire_node(w):
+
+func add_freepin_node(p):
+	var freepin = FREEPIN.instance()
+	freepin.position = p[0]
+
+	var pin = freepin.get_child(0).get_child(0)
+
+	if (p.size() > 1): # additional values
+		pin.is_source = true
+		pin.tension_static = float(p[1])
+		pin.tension_amplitude = float(p[2]) if p.size() > 2 else 0
+		pin.tension_speed = float(p[3]) if p.size() > 3 else 0
+		pin.tension_phase = float(p[4]) if p.size() > 4 else 0
+	$nodes.add_child(freepin)
+func add_wire_based_node(id, w):
 	var newwire = WIRE.instance()
 	var orig_pin = get_pin(w[0][0], w[0][1], false)
 	var dest_pin = get_pin(w[1][0], w[1][1], true)
 	newwire.attach(orig_pin, dest_pin)
 
-	newwire.conductance = w[2] if w.size() > 2 else "inf"
-	if str(newwire.conductance) == "inf":
-		newwire.resistance = 0
+	newwire.resistance = w[2] if w.size() > 2 else 0.0
+	if str(newwire.resistance) == "inf":
+		newwire.conductance = 0
 	else:
-		newwire.conductance = float(w[2])
-		if newwire.conductance == 0:
-			newwire.resistance = "inf"
+		newwire.resistance = float(w[2]) if w.size() > 2 else 0.0
+		if newwire.resistance == 0:
+			newwire.conductance = "inf"
 		else:
-			newwire.resistance = abs(1/newwire.conductance)
+			newwire.conductance = abs(1/newwire.conductance)
+
+	newwire.node_type = id
 
 	$wires.add_child(newwire)
 	circuitdata["wires"].push_back(w)
@@ -125,10 +132,10 @@ func load_circuit(n):
 		add_input_node(i)
 	for o in to_load_from["outputs"]: # populate OUTPUTS
 		add_output_node(o)
-	for c in to_load_from["circuits"]: # populate sub-circuits
-		add_circuit_node(c)
-	for w in to_load_from["wires"]: # for every wire
-		add_wire_node(w)
+	for id in to_load_from["circuits"]: # populate sub-circuits
+		var list_of_such = to_load_from["circuits"][id]
+		for c in list_of_such:
+			add_circuit_node(id, c)
 
 ###
 
@@ -157,14 +164,13 @@ func _draw():
 
 func _ready():
 	logic.main = self
+	load_circuit(3)
 
-	load_circuit(3)
-	load_circuit(3)
-	load_circuit(3)
-	load_circuit(3)
-	load_circuit(3)
-	save_circuit(3)
-	load_circuit(3)
+###
+
+var buildmode_circuit = null
+var buildmode_stage = null
+var buildmode_last_pin = null
 
 var node_selection = null
 var drag_button = 0
@@ -195,7 +201,9 @@ func _input(event):
 		drag_button += 4
 
 	# update debug key display
-	$HUD/bottom_left/keys.text = str(node_selection) + "\n" + str(drag_button) + " " + str(selection_mode)
+	$HUD/bottom_left/keys.text = str(buildmode_circuit) + " : " + str(buildmode_stage) + " : " + str(buildmode_last_pin)
+	$HUD/bottom_left/keys.text += "\n" + str(node_selection)
+	$HUD/bottom_left/keys.text += "\n" + str(drag_button) + " " + str(selection_mode)
 
 	# mouse clicks!
 	if Input.is_action_just_pressed("mouse_middle") || Input.is_action_just_pressed("mouse_left"):
@@ -237,3 +245,9 @@ func _on_btn_zoomy_less_pressed():
 
 func _on_btn_zoomy_more_pressed():
 	logic.probe.zoom_ver(1, self)
+
+#####
+
+func _on_wire_pressed():
+#	buildmode_circuit =
+	pass

@@ -5,6 +5,8 @@
 
 [node name="Node" type="Polygon2D"]
 position = Vector2( -59, -37 )
+z_index = -3
+z_as_relative = false
 color = Color( 0.721569, 0.180392, 0.180392, 1 )
 polygon = PoolVector2Array( -39, 41, 9, 118, 107, 118, 151, 35, 107, -44, 9, -43 )
 __meta__ = {
@@ -12,32 +14,57 @@ __meta__ = {
 }
 
 [node name="outputs" type="Node2D" parent="."]
+z_index = 3
 __meta__ = {
 "_edit_lock_": true
 }
 
 [node name="Pin" parent="outputs" instance=ExtResource( 3 )]
 position = Vector2( 107.142, -42.8569 )
+is_source = true
+tension_amplitude = 20.0
+tension_speed = 0.5
+tension_phase = 120.0
 
 [node name="Pin2" parent="outputs" instance=ExtResource( 3 )]
 position = Vector2( 106.321, 118.101 )
+is_source = true
+tension_amplitude = 20.0
+tension_speed = 0.5
+tension_phase = 240.0
 
 [node name="Pin3" parent="outputs" instance=ExtResource( 3 )]
 position = Vector2( -39.338, 39.3971 )
+is_source = true
+tension_amplitude = 20.0
+tension_speed = 0.5
 
 [node name="inputs" type="Node2D" parent="."]
+z_index = 3
 __meta__ = {
 "_edit_lock_": true
 }
 
 [node name="Pin" parent="inputs" instance=ExtResource( 3 )]
 position = Vector2( 8.33026, 117.733 )
+is_source = true
+tension_amplitude = 20.0
+tension_speed = 0.5
+tension_phase = 300.0
 
 [node name="Pin2" parent="inputs" instance=ExtResource( 3 )]
 position = Vector2( 6.6459, -42.3279 )
+is_source = true
+tension_amplitude = 20.0
+tension_speed = 0.5
+tension_phase = 60.0
 
 [node name="Pin3" parent="inputs" instance=ExtResource( 3 )]
 position = Vector2( 150.335, 37.3973 )
+is_source = true
+tension_amplitude = 20.0
+tension_speed = 0.5
+tension_phase = 180.0
 
 [node name="Label" type="Label" parent="."]
 anchor_left = 0.5

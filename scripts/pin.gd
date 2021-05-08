@@ -11,6 +11,8 @@ export var tension_phase = 0.0
 
 export(bool) var can_interact = true
 
+var owner_node = null
+
 var init_arr = null
 
 var enabled = true
@@ -24,7 +26,7 @@ var wires_list = []
 var pin_neighbors = []
 
 func maintain_tension(): # actual source of tension!
-	if enabled && is_source:
+	if is_source:
 		tension = tension_static + 2 * tension_amplitude * sin(tension_phase * PI / 180)
 
 		# update tension phase
@@ -112,18 +114,22 @@ func _input(event):
 	if focused:
 		if logic.main.selection_mode & 1:
 			if Input.is_action_just_pressed("mouse_left"):
-				orig_position = get_parent().get_parent().position
+				orig_position = owner_node.position
 			if event is InputEventMouseMotion && Input.is_action_pressed("mouse_left"):
-				get_parent().get_parent().position = orig_position + (event.position - logic.main.orig_drag_point) * logic.main.camera.zoom
+				owner_node.position = orig_position + (event.position - logic.main.orig_drag_point) * logic.main.camera.zoom
 
 				# grid snapping!
 				if logic.main.selection_mode & 2:
-					var rx = round(get_parent().get_parent().position.x / 50.0) * 50.0
-					var ry = round(get_parent().get_parent().position.y / 50.0) * 50.0
-					get_parent().get_parent().position = Vector2(rx, ry)
+					var rx = round(owner_node.position.x / 50.0) * 50.0
+					var ry = round(owner_node.position.y / 50.0) * 50.0
+					owner_node.position = Vector2(rx, ry)
 
-				for w in wires_list:
-					w.redraw()
+				for i in owner_node.get_child(0).get_children():
+					for w in i.wires_list:
+						w.redraw()
+				for o in owner_node.get_child(1).get_children():
+					for w in o.wires_list:
+						w.redraw()
 		else:
 			if Input.is_action_just_released("mouse_left"):
 				enabled = !enabled
@@ -131,5 +137,6 @@ func _input(event):
 				logic.probe.attach(self, 0)
 
 func _ready():
+	owner_node = get_parent().get_parent()
 	add_to_group("pins")
 	add_to_group("sources")

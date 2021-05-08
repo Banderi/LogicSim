@@ -62,6 +62,8 @@ func proper(v, u, spaced = false, full_units = false, rectify = 1.0, digits = 0.
 			proper_str = str(v_corr) + units
 	return proper_str
 
+# wires ALWAYS are laid out cascading from inputs to outputs -
+# will be rearranged automatically if a wire connects to INPUTS
 var circuits = {
 	-99: { # AND gate
 		"name": "and",
@@ -144,30 +146,21 @@ var circuits = {
 		"outputs": [],
 		"color": "000000",
 		"circuits": [
-			[-201,			# circuit ID (negatives are reserved)
-			 -300, -120],	# circuit position
+			[-201, Vector2(-300, -120)],	# circuit position
 
-			[-999,
-			 100, -180],		# free floating pin
-			[-999,
-			 100, 100],		# free floating pin
-			[-999,
-			 -300, 100],		# free floating pin
+			[-999, Vector2(100, -180)],		# free floating pin
+			[-999, Vector2(100, 100)],		# free floating pin
+			[-999, Vector2(-300, 100)],		# free floating pin
 
-#			[-999,
-#			 -253, -90],		# free floating pin
+#			[-999, Vector2(-253, -90)],		# free floating pin
 		],
-		# wires ALWAYS are laid out cascading from inputs to outputs -
-		# will be rearranged automatically if a wire connects to INPUTS
 		"wires": [
-			[ # wire one
-				[0,0], [1,0] # from circuit 0 (ouput 0) to circuit 1 (input 0)
-			],
-			[[1,0], [2,0]],
-			[[2,0], [3,0]],
-			[[3,0], [0,0]],
+			[[0,0], [1,0], 1], # from circuit 0 (ouput 0) to circuit 1 (input 0)
+			[[1,0], [2,0], 1],
+			[[2,0], [3,0], 1],
+			[[3,0], [0,0], 1],
 
-			[[0,1], [0,1]]
+			[[0,1], [0,1], 1]
 
 #			[[0,0], [4,0]],
 #			[[0,1], [4,0]],
@@ -180,24 +173,25 @@ var circuits = {
 		"inputs": [],
 		"outputs": [],
 		"color": "000000",
-		"circuits": [
-			# free floating pins
-			[-999, Vector2(-400, -200), 100],
-			[-999, Vector2(-400, -100)],
-			[-999, Vector2(-400, 0), -100],
+		"circuits": {
+			-999: [ # free floating pins
+				[Vector2(-400, -200), 100],
+				[Vector2(-400, -100)],
+				[Vector2(-400, 0), -100],
 
-			[-999, Vector2(-100, -200), 50],
-			[-999, Vector2(-100, -100)],
-			[-999, Vector2(-100, 0), 0],
-		],
-		"wires": [
-			[[0,0], [1,0]], # from circuit 0 (ouput 0) to circuit 1 (input 0)
-			[[1,0], [2,0]],
+				[Vector2(-100, -200), 50],
+				[Vector2(-100, -100)],
+				[Vector2(-100, 0), 0],
+			],
+			-998: [ # wires
+				[[0,0], [1,0]], # from circuit 0 (ouput 0) to circuit 1 (input 0)
+				[[1,0], [2,0]],
 
-			[[3,0], [4,0]],
-			[[4,0], [5,0]],
+				[[3,0], [4,0]],
+				[[4,0], [5,0]],
 
-			[[1,0], [4,0], 0.002],
-		]
+				[[1,0], [4,0], 500],
+			]
+		}
 	}
 }
