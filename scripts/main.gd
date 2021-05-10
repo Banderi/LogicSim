@@ -9,6 +9,7 @@ const FREEPIN = preload("res://scenes/free_pin.tscn")
 const ACGEN = preload("res://scenes/ac_generator.tscn")
 
 onready var camera = $Camera2D
+var max_camera_pan = 3000
 
 onready var inputs = $inputs
 onready var outputs = $outputs
@@ -16,30 +17,44 @@ onready var circuit = $circuit
 onready var nodes = $circuit/nodes
 onready var wires = $circuit/wires
 
+onready var cursor = $BACK/cursor
+
 var circuitdata = {
 	"name": "",
 	"color": "000000",
 	"inputs": [],
 	"outputs": [],
-	"circuits": [],
-	"wires": []
+	"circuits": {}
 }
 
 ####
 
-func get_pin(c, p, inputs): # return pin node's handle from circuit C, slot P, input/output side
-	if c == -1:
+var node_token_list = {}
+func get_pin_from_token(token, p):
+
+	# for special legacy cases
+	if token == -1:
 		return inputs.get_child(p).get_node("Pin")
-	elif c == -2:
+	elif token == -2:
 		return outputs.get_child(p).get_node("Pin")
 	else:
-		if inputs:
-			return nodes.get_child(c).get_node("inputs").get_child(p)
+		var node = node_token_list[token]
+
+		# if p < input count, it's an input; above that, it's an output
+		if p < node.get_node("inputs").get_children().size():
+			return node.get_node("inputs").get_child(p)
 		else:
-			var o = nodes.get_child(c).get_node("outputs").get_child(p)
-			if o == null:
-				return nodes.get_child(c).get_node("inputs").get_child(p)
-			return nodes.get_child(c).get_node("outputs").get_child(p)
+			return node.get_node("outputs").get_child(p)
+func generate_new_token():
+	for token in range(0, 99):
+		if !node_token_list.has(token):
+			print(token)
+			return token
+	return null # oh no, out of space!
+func register_token(node, token):
+#	var token = generate_new_token()
+	node.node_token = token
+	node_token_list[token] = node
 
 func add_input_node(i):
 	var newinput = INPUT.instance()
@@ -55,43 +70,55 @@ func add_output_node(o):
 	newoutput.get_node("Label").text = o[0]
 	outputs.add_child(newoutput)
 	circuitdata["outputs"].push_back(o)
-func add_circuit_node(id, c): # needed for in-game circuit spawn
+func add_circuit_node(id, data): # needed for in-game circuit spawn
+
+	# get new token for node
+	if data[0] == null:
+		data[0] = generate_new_token()
+
 	match id:
 		-999:
-			add_freepin_node(c)
+			add_freepin_node(data)
 		-998:
-			add_wire_based_node(id, c)
+			add_wire_based_node(id, data)
 		-201:
 			var ac = ACGEN.instance()
-			ac.position = c[0]
+			ac.position = data[0]
 			nodes.add_child(ac)
 		_:
 			var newgate = GATE.instance()
-			newgate.rect_position = c[0]
+			newgate.rect_position = data[0]
 			newgate.load_circuit(id)
 			nodes.add_child(newgate)
-	circuitdata["circuits"].push_back(c)
+	if !circuitdata["circuits"].has(id):
+		circuitdata["circuits"][id] = []
+	circuitdata["circuits"][id].push_back(data)
 
-func add_freepin_node(p):
+func add_freepin_node(a):
 	var freepin = FREEPIN.instance()
-	freepin.position = p[0]
+	freepin.position = a[1]
 
 	var pin = freepin.get_child(0).get_child(0)
 
-	if (p.size() > 1): # additional values
+	if (a.size() > 2): # additional values
 		pin.is_source = true
-		pin.tension_static = float(p[1])
-		pin.tension_amplitude = float(p[2]) if p.size() > 2 else 0
-		pin.tension_speed = float(p[3]) if p.size() > 3 else 0
-		pin.tension_phase = float(p[4]) if p.size() > 4 else 0
+		pin.tension_static = float(a[2])
+		pin.tension_amplitude = float(a[3]) if a.size() > 3 else 0
+		pin.tension_speed = float(a[4]) if a.size() > 4 else 0
+		pin.tension_phase = float(a[5]) if a.size() > 5 else 0
+
+	# node id info
+	freepin.node_type = -999
+	register_token(freepin, a[0])
+
 	nodes.add_child(freepin)
-func add_wire_based_node(id, w):
+func add_wire_based_node(id, a):
 	var newwire = WIRE.instance()
-	var orig_pin = get_pin(w[0][0], w[0][1], false)
-	var dest_pin = get_pin(w[1][0], w[1][1], true)
+	var orig_pin = get_pin_from_token(a[1][0], a[1][1])
+	var dest_pin = get_pin_from_token(a[2][0], a[2][1])
 	newwire.attach(orig_pin, dest_pin)
 
-	var imp = w[2] if w.size() > 2 else Vector2()
+	var imp = a[3] if a.size() > 3 else Vector2()
 	newwire.impedance = null # reset impedance
 
 	# resistance
@@ -124,22 +151,15 @@ func add_wire_based_node(id, w):
 	if newwire.impedance == null:
 		newwire.impedance = sqrt(imp[0] * imp[0] + imp[1] * imp[1])
 
-#	if str(newwire.resistance) == "inf":
-#		newwire.conductance = 0
-#	else:
-#		newwire.resistance = float(w[2]) if w.size() > 2 else 0.0
-#		if newwire.resistance == 0:
-#			newwire.conductance = "inf"
-#		else:
-#			newwire.conductance = abs(1/newwire.conductance)
+	# etc.
+	newwire.capacitance = a[4] if a.size() > 4 else 0.0
+	newwire.inductance = a[5] if a.size() > 5 else 0.0
 
-	newwire.capacitance = w[3] if w.size() > 3 else 0.0
-	newwire.inductance = w[4] if w.size() > 4 else 0.0
-
+	# node id info
 	newwire.node_type = id
+	register_token(newwire, a[0])
 
 	wires.add_child(newwire)
-	circuitdata["wires"].push_back(w)
 
 func unload_circuit():
 	circuitdata = {
@@ -147,8 +167,7 @@ func unload_circuit():
 		"color": "000000",
 		"inputs": [],
 		"outputs": [],
-		"circuits": [],
-		"wires": []
+		"circuits": {}
 	}
 	for n in inputs.get_children():
 		n.free()
@@ -158,6 +177,7 @@ func unload_circuit():
 		n.free()
 	for n in wires.get_children():
 		n.free()
+	node_token_list = {}
 func save_circuit(n):
 	logic.circuits[n] = circuitdata
 func load_circuit(n):
@@ -175,8 +195,8 @@ func load_circuit(n):
 		add_output_node(o)
 	for id in to_load_from["circuits"]: # populate sub-circuits
 		var list_of_such = to_load_from["circuits"][id]
-		for c in list_of_such:
-			add_circuit_node(id, c)
+		for data in list_of_such:
+			add_circuit_node(id, data)
 
 ###
 
@@ -206,6 +226,20 @@ func _draw():
 func _ready():
 	logic.main = self
 	load_circuit(3)
+#	save_circuit(3)
+#	load_circuit(3)
+#	save_circuit(3)
+#	load_circuit(3)
+#	save_circuit(3)
+#	load_circuit(3)
+#	save_circuit(3)
+#	load_circuit(3)
+#	save_circuit(3)
+#	load_circuit(3)
+	tooltip("")
+
+func tooltip(txt):
+	$HUD/bottom_right/tooltip.text = txt
 
 ###
 
@@ -216,19 +250,41 @@ func start_placing_node(id):
 	buildmode_circuit = id
 	buildmode_stage = 0
 	buildmode_last_pin = null
-func cancel_node_placement():
+	tooltip("Select starting pin")
+func terminate_node_placement():
 	buildmode_circuit = null
 	buildmode_stage = null
 	buildmode_last_pin = null
-func attach_node_to_pin(p):
-	buildmode_last_pin = p
-	buildmode_stage += 1
+	tooltip("")
+func attach_node_to_pin(pin):
+	match buildmode_stage:
+		0:
+			tooltip("Select destination pin")
+			buildmode_last_pin = pin
+			buildmode_stage += 1
+		1:
+			if buildmode_last_pin.pin_neighbors.has(pin):
+				tooltip("You can't overlap wires!")
+			else:
+				add_wire_based_node(-998, [
+						generate_new_token(),
+						[buildmode_last_pin.get_parent().get_parent().node_token, 0],
+						[pin.get_parent().get_parent().node_token, 0]
+					])
+				terminate_node_placement()
+
 
 var node_selection = null
+var local_event_drag_start = null
+var local_event_drag_corrected = Vector2(0,0)
+var mouse_position = Vector2(0,0)
 var drag_button = 0
 var selection_mode = 0
-var orig_drag_point = Vector2()
-var orig_camera_point = Vector2()
+var edit_moving = false
+var orig_drag_point_left = null
+var orig_drag_point_middle = null
+var orig_drag_point_right = null
+var orig_camera_point = null
 func _input(event):
 	# reset node selection
 	if node_selection != null && !node_selection.focused:
@@ -242,6 +298,11 @@ func _input(event):
 		selection_mode += 2
 	if Input.is_action_pressed("alt"):
 		selection_mode += 4
+	# click to drag pin/node around
+	if selection_mode & 1 && buildmode_stage == null:
+		edit_moving = true
+	else:
+		edit_moving = false
 
 	# update button flags
 	drag_button = 0
@@ -252,43 +313,75 @@ func _input(event):
 	if Input.is_action_pressed("mouse_right"):
 		drag_button += 4
 
-	# update debug key display
-	$HUD/bottom_left/keys.text = str(buildmode_circuit) + " : " + str(buildmode_stage) + " : " + str(buildmode_last_pin)
-	$HUD/bottom_left/keys.text += "\n" + str(node_selection)
-	$HUD/bottom_left/keys.text += "\n" + str(drag_button) + " " + str(selection_mode)
-
 	# mouse clicks!
-	if Input.is_action_just_pressed("mouse_middle") || Input.is_action_just_pressed("mouse_left"):
-		orig_drag_point = event.position
+	if Input.is_action_just_pressed("mouse_middle"):
+		orig_drag_point_middle = mouse_position
 		orig_camera_point = camera.position
-	if Input.is_action_just_released("mouse_middle") || Input.is_action_just_released("mouse_left"):
-		orig_drag_point = Vector2()
-		orig_camera_point = Vector2()
+	if Input.is_action_just_pressed("mouse_left"):
+		orig_drag_point_left = mouse_position
+		local_event_drag_start = local_event_drag_corrected
+	if Input.is_action_just_released("mouse_middle"):
+		orig_drag_point_middle = null
+		orig_camera_point = null
+	if Input.is_action_just_released("mouse_left"):
+		orig_drag_point_left = null
+		local_event_drag_start = null
 
 	if buildmode_stage != null:
 		if Input.is_action_just_released("mouse_right"):
-			cancel_node_placement()
-		if Input.is_action_just_released("mouse_left"):
-			if node_selection != null && node_selection.node_type == -999:
+			terminate_node_placement()
+		if Input.is_action_just_released("mouse_left") || Input.is_action_pressed("mouse_left") && local_event_drag_start != local_event_drag_corrected:
+			if node_selection != null && node_selection != buildmode_last_pin && node_selection.node_type == -999:
 				attach_node_to_pin(node_selection)
 
 	# camera scrolling and dragging
 	if event is InputEventMouseButton:
 		if event.button_index == BUTTON_WHEEL_UP:
-			camera.zoom *= 0.9
+			camera.zoom *= 0.75
 		if event.button_index == BUTTON_WHEEL_DOWN:
-			camera.zoom *= 1.2
+			camera.zoom *= 1.0 / 0.75
 	if event is InputEventMouseMotion:
-		if drag_button & 2:
-			camera.position = orig_camera_point + (orig_drag_point - event.position) * camera.zoom
-	camera.zoom.x = clamp(camera.zoom.x, 0.4, 10)
-	camera.zoom.y = clamp(camera.zoom.y, 0.4, 10)
+		mouse_position = event.position
+		local_event_drag_corrected = get_global_mouse_position()
+		if selection_mode & 2:
+			local_event_drag_corrected.x = round(local_event_drag_corrected.x / 50.0) * 50.0
+			local_event_drag_corrected.y = round(local_event_drag_corrected.y / 50.0) * 50.0
+		elif drag_button & 2:
+			camera.position = orig_camera_point + (orig_drag_point_middle - mouse_position) * camera.zoom
+			camera.position.x = clamp(camera.position.x, -max_camera_pan, max_camera_pan)
+			camera.position.y = clamp(camera.position.y, -max_camera_pan, max_camera_pan)
+		if node_selection != null && node_selection.node_type == -999:
+			local_event_drag_corrected = node_selection.get_parent().get_parent().position
+	camera.zoom.x = clamp(camera.zoom.x, 0.5625, 9.98872123152)
+	camera.zoom.y = clamp(camera.zoom.y, 0.5625, 9.98872123152)
 
 	# circuit visibility in building mode
 	if buildmode_stage == null:
 		circuit.modulate.a = 1.0
+		cursor.visible = false
 	else:
 		circuit.modulate.a = 0.5
+		cursor.visible = true
+#		cursor.scale = Vector2(0.4, 0.4) * camera.zoom
+		if local_event_drag_start == null:
+			cursor.position = local_event_drag_corrected
+		else:
+			cursor.position = local_event_drag_start
+		if node_selection == null:
+			$BACK/cursor/Line2D.visible = false
+#			cursor.rotation_degrees = 0
+		elif node_selection.node_type == -999:
+			$BACK/cursor/Line2D.visible = true
+#			cursor.rotation_degrees = 0
+#			cursor.rotation_degrees = 45
+
+	# update debug key display
+	$HUD/bottom_left/keys.text = str(buildmode_circuit) + " : " + str(buildmode_stage) + " : " + str(buildmode_last_pin) # + " " + str(get_node_pin_id(buildmode_last_pin))
+	$HUD/bottom_left/keys.text += "\n" + str(node_selection) # + " " + str(get_node_pin_id(node_selection))
+	$HUD/bottom_left/keys.text += "\n" + str(drag_button) + " " + str(selection_mode)
+	$HUD/bottom_left/keys.text += "\n" + str(camera.position)
+	$HUD/bottom_left/keys.text += "\n" + str(camera.zoom)
+	$HUD/bottom_left/keys.text += "\n" + str(cursor.position)
 
 func _on_btn_go_pressed():
 	logic.simulation_go = -1

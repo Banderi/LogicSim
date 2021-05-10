@@ -2,6 +2,7 @@ extends Node2D
 
 export(bool) var can_interact = true
 var node_type = -998
+var node_token = null
 
 var orig_pin = null
 var dest_pin = null

@@ -2,6 +2,7 @@ extends Node
 
 export(bool) var can_interact = true
 var node_type = -999
+#var node_token = null
 
 export(bool) var input = true
 
@@ -113,11 +114,11 @@ func _on_Pin_mouse_exited():
 var orig_position = Vector2()
 func _input(event):
 	if focused:
-		if logic.main.selection_mode & 1:
+		if logic.main.edit_moving:
 			if Input.is_action_just_pressed("mouse_left"):
 				orig_position = owner_node.position
 			if event is InputEventMouseMotion && Input.is_action_pressed("mouse_left"):
-				owner_node.position = orig_position + (event.position - logic.main.orig_drag_point) * logic.main.camera.zoom
+				owner_node.position = orig_position + (event.position - logic.main.orig_drag_point_left) * logic.main.camera.zoom
 
 				# grid snapping!
 				if logic.main.selection_mode & 2:
