@@ -10,6 +10,12 @@ const ACGEN = preload("res://scenes/ac_generator.tscn")
 
 onready var camera = $Camera2D
 
+onready var inputs = $inputs
+onready var outputs = $outputs
+onready var circuit = $circuit
+onready var nodes = $circuit/nodes
+onready var wires = $circuit/wires
+
 var circuitdata = {
 	"name": "",
 	"color": "000000",
@@ -22,32 +28,32 @@ var circuitdata = {
 ####
 
 func get_pin(c, p, inputs): # return pin node's handle from circuit C, slot P, input/output side
-	if c == -99:
-		return $inputs.get_child(p).get_node("Pin")
-	elif c == 99:
-		return $outputs.get_child(p).get_node("Pin")
+	if c == -1:
+		return inputs.get_child(p).get_node("Pin")
+	elif c == -2:
+		return outputs.get_child(p).get_node("Pin")
 	else:
 		if inputs:
-			return $nodes.get_child(c).get_node("inputs").get_child(p)
+			return nodes.get_child(c).get_node("inputs").get_child(p)
 		else:
-			var o = $nodes.get_child(c).get_node("outputs").get_child(p)
+			var o = nodes.get_child(c).get_node("outputs").get_child(p)
 			if o == null:
-				return $nodes.get_child(c).get_node("inputs").get_child(p)
-			return $nodes.get_child(c).get_node("outputs").get_child(p)
+				return nodes.get_child(c).get_node("inputs").get_child(p)
+			return nodes.get_child(c).get_node("outputs").get_child(p)
 
 func add_input_node(i):
 	var newinput = INPUT.instance()
 	newinput.position = Vector2(220, i[1])
 	newinput.get_node("Pin").input = true
 	newinput.get_node("Label").text = i[0]
-	$inputs.add_child(newinput)
+	inputs.add_child(newinput)
 	circuitdata["inputs"].push_back(i)
 func add_output_node(o):
 	var newoutput = OUTPUT.instance()
 	newoutput.position = Vector2(-25, o[1])
 	newoutput.get_node("Pin").input = false
 	newoutput.get_node("Label").text = o[0]
-	$outputs.add_child(newoutput)
+	outputs.add_child(newoutput)
 	circuitdata["outputs"].push_back(o)
 func add_circuit_node(id, c): # needed for in-game circuit spawn
 	match id:
@@ -58,12 +64,12 @@ func add_circuit_node(id, c): # needed for in-game circuit spawn
 		-201:
 			var ac = ACGEN.instance()
 			ac.position = c[0]
-			$nodes.add_child(ac)
+			nodes.add_child(ac)
 		_:
 			var newgate = GATE.instance()
 			newgate.rect_position = c[0]
 			newgate.load_circuit(id)
-			$nodes.add_child(newgate)
+			nodes.add_child(newgate)
 	circuitdata["circuits"].push_back(c)
 
 func add_freepin_node(p):
@@ -78,26 +84,61 @@ func add_freepin_node(p):
 		pin.tension_amplitude = float(p[2]) if p.size() > 2 else 0
 		pin.tension_speed = float(p[3]) if p.size() > 3 else 0
 		pin.tension_phase = float(p[4]) if p.size() > 4 else 0
-	$nodes.add_child(freepin)
+	nodes.add_child(freepin)
 func add_wire_based_node(id, w):
 	var newwire = WIRE.instance()
 	var orig_pin = get_pin(w[0][0], w[0][1], false)
 	var dest_pin = get_pin(w[1][0], w[1][1], true)
 	newwire.attach(orig_pin, dest_pin)
 
-	newwire.resistance = w[2] if w.size() > 2 else 0.0
-	if str(newwire.resistance) == "inf":
-		newwire.conductance = 0
+	var imp = w[2] if w.size() > 2 else Vector2()
+	newwire.impedance = null # reset impedance
+
+	# resistance
+	if str(imp[0]) == "inf":
+		newwire.resistance = "inf"
+		newwire.conductance = 0.0
+		newwire.impedance = "inf"
+	elif float(imp[0]) == 0.0:
+		newwire.resistance = 0.0
+		newwire.conductance = "inf"
+		newwire.impedance = "inf"
 	else:
-		newwire.resistance = float(w[2]) if w.size() > 2 else 0.0
-		if newwire.resistance == 0:
-			newwire.conductance = "inf"
-		else:
-			newwire.conductance = abs(1/newwire.conductance)
+		newwire.resistance = float(imp[0])
+		newwire.conductance = 1.0 / newwire.resistance
+
+	# reactance
+	if str(imp[1]) == "inf":
+		newwire.reactance = "inf"
+		newwire.reactance_inv = 0.0
+		newwire.impedance = "inf"
+	elif float(imp[1]) == 0.0:
+		newwire.reactance = 0.0
+		newwire.reactance_inv = "inf"
+		newwire.impedance = "inf"
+	else:
+		newwire.reactance = float(imp[1])
+		newwire.reactance_inv = 1.0 / newwire.reactance
+
+	# impedance
+	if newwire.impedance == null:
+		newwire.impedance = sqrt(imp[0] * imp[0] + imp[1] * imp[1])
+
+#	if str(newwire.resistance) == "inf":
+#		newwire.conductance = 0
+#	else:
+#		newwire.resistance = float(w[2]) if w.size() > 2 else 0.0
+#		if newwire.resistance == 0:
+#			newwire.conductance = "inf"
+#		else:
+#			newwire.conductance = abs(1/newwire.conductance)
+
+	newwire.capacitance = w[3] if w.size() > 3 else 0.0
+	newwire.inductance = w[4] if w.size() > 4 else 0.0
 
 	newwire.node_type = id
 
-	$wires.add_child(newwire)
+	wires.add_child(newwire)
 	circuitdata["wires"].push_back(w)
 
 func unload_circuit():
@@ -109,13 +150,13 @@ func unload_circuit():
 		"circuits": [],
 		"wires": []
 	}
-	for n in $inputs.get_children():
+	for n in inputs.get_children():
 		n.free()
-	for n in $outputs.get_children():
+	for n in outputs.get_children():
 		n.free()
-	for n in $nodes.get_children():
+	for n in nodes.get_children():
 		n.free()
-	for n in $wires.get_children():
+	for n in wires.get_children():
 		n.free()
 func save_circuit(n):
 	logic.circuits[n] = circuitdata
@@ -171,6 +212,17 @@ func _ready():
 var buildmode_circuit = null
 var buildmode_stage = null
 var buildmode_last_pin = null
+func start_placing_node(id):
+	buildmode_circuit = id
+	buildmode_stage = 0
+	buildmode_last_pin = null
+func cancel_node_placement():
+	buildmode_circuit = null
+	buildmode_stage = null
+	buildmode_last_pin = null
+func attach_node_to_pin(p):
+	buildmode_last_pin = p
+	buildmode_stage += 1
 
 var node_selection = null
 var drag_button = 0
@@ -213,6 +265,13 @@ func _input(event):
 		orig_drag_point = Vector2()
 		orig_camera_point = Vector2()
 
+	if buildmode_stage != null:
+		if Input.is_action_just_released("mouse_right"):
+			cancel_node_placement()
+		if Input.is_action_just_released("mouse_left"):
+			if node_selection != null && node_selection.node_type == -999:
+				attach_node_to_pin(node_selection)
+
 	# camera scrolling and dragging
 	if event is InputEventMouseButton:
 		if event.button_index == BUTTON_WHEEL_UP:
@@ -224,6 +283,12 @@ func _input(event):
 			camera.position = orig_camera_point + (orig_drag_point - event.position) * camera.zoom
 	camera.zoom.x = clamp(camera.zoom.x, 0.4, 10)
 	camera.zoom.y = clamp(camera.zoom.y, 0.4, 10)
+
+	# circuit visibility in building mode
+	if buildmode_stage == null:
+		circuit.modulate.a = 1.0
+	else:
+		circuit.modulate.a = 0.5
 
 func _on_btn_go_pressed():
 	logic.simulation_go = -1
@@ -249,5 +314,4 @@ func _on_btn_zoomy_more_pressed():
 #####
 
 func _on_wire_pressed():
-#	buildmode_circuit =
-	pass
+	start_placing_node(-998)

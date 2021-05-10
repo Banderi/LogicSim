@@ -1,7 +1,6 @@
 extends Node2D
 
-var can_interact = true
-
+export(bool) var can_interact = true
 var node_type = -998
 
 var orig_pin = null
@@ -17,8 +16,17 @@ var resistivity = 0.01
 var area = 1.0
 var length = 0.0
 
+#var imp_vector = Vector2()
+var impedance = null
+#
 var resistance = 1.0
 var conductance = 1.0
+#
+var reactance = 1.0
+var reactance_inv = 1.0
+
+var capacitance = 0.0
+var inductance = 0.0
 
 var focused = false
 func _on_bg_mouse_entered():
@@ -200,6 +208,6 @@ func _ready():
 
 func _input(event):
 	if focused:
-		if event is InputEventMouseButton && !event.pressed:
-			if event.button_index == BUTTON_RIGHT:
+		if logic.main.buildmode_stage == null:
+			if Input.is_action_just_released("mouse_right"):
 				logic.probe.attach(self, 1)

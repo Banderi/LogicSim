@@ -25,12 +25,18 @@ z_index = -999
 z_as_relative = false
 script = ExtResource( 3 )
 
-[node name="wires" type="Node2D" parent="."]
+[node name="circuit" type="Node2D" parent="."]
+__meta__ = {
+"_edit_group_": true,
+"_edit_lock_": true
+}
+
+[node name="wires" type="Node2D" parent="circuit"]
 __meta__ = {
 "_edit_lock_": true
 }
 
-[node name="nodes" type="Node2D" parent="."]
+[node name="nodes" type="Node2D" parent="circuit"]
 __meta__ = {
 "_edit_lock_": true
 }
@@ -317,6 +323,7 @@ __meta__ = {
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2( -260, -220 )
 current = true
+
 [connection signal="pressed" from="HUD/graph/Control/btn_stop" to="." method="_on_btn_stop_pressed"]
 [connection signal="pressed" from="HUD/graph/Control/btn_go" to="." method="_on_btn_go_pressed"]
 [connection signal="pressed" from="HUD/graph/Control/btn_step" to="." method="_on_btn_step_pressed"]

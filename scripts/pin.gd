@@ -1,5 +1,8 @@
 extends Node
 
+export(bool) var can_interact = true
+var node_type = -999
+
 export(bool) var input = true
 
 # tension source
@@ -8,8 +11,6 @@ export var tension_static = 0.0
 export var tension_amplitude = 0.0
 export var tension_speed = 0.0
 export var tension_phase = 0.0
-
-export(bool) var can_interact = true
 
 var owner_node = null
 
@@ -130,7 +131,7 @@ func _input(event):
 				for o in owner_node.get_child(1).get_children():
 					for w in o.wires_list:
 						w.redraw()
-		else:
+		elif logic.main.buildmode_stage == null:
 			if Input.is_action_just_released("mouse_left"):
 				enabled = !enabled
 			if Input.is_action_just_released("mouse_right"):
