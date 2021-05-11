@@ -425,7 +425,6 @@ func _input(event):
 		cursor.visible = true
 		cursor2.visible = true
 		cursor3.visible = true
-#		cursorline.visible = true
 
 		cursor.position = local_event_drag_corrected
 		cursor2.position = local_event_drag_corrected
@@ -442,16 +441,8 @@ func _input(event):
 				buildmode_last_pin.owner_node.position,
 				local_event_drag_corrected
 			]
-		if node_selection == null: # || node_selection.node_type == -999:
+		if node_selection == null:
 			cursor.visible = false
-#			cursorline.visible = false
-
-#		if node_selection == null:
-#			cursor.visible = false
-#		elif node_selection.node_type == -999:
-#			cursor.visible = true
-#			cursor2.visible = false
-#			cursor3.visible = true
 
 	# update debug key display
 	$HUD/bottom_left/keys.text = str(buildmode_circuit_type) + " : " + str(buildmode_stage) + " : " + str(buildmode_last_pin) # + " " + str(get_node_pin_id(buildmode_last_pin))
