@@ -131,9 +131,10 @@ __meta__ = {
 [node name="HUD" type="CanvasLayer" parent="."]
 
 [node name="graph" parent="HUD" instance=ExtResource( 1 )]
-margin_left = 9.0
-margin_top = 11.0
-margin_bottom = 270.0
+margin_left = 10.0
+margin_top = 56.0
+margin_right = 501.0
+margin_bottom = 315.0
 
 [node name="Control" type="Control" parent="HUD/graph"]
 anchor_top = 1.0
@@ -305,6 +306,29 @@ margin_bottom = 104.0
 rect_min_size = Vector2( 10, 50 )
 text = "wire"
 
+[node name="top_left" type="Control" parent="HUD"]
+margin_right = 40.0
+margin_bottom = 40.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="btn_save" parent="HUD/top_left" instance=ExtResource( 2 )]
+margin_left = 10.0
+margin_top = 10.0
+margin_right = 70.0
+margin_bottom = 37.0
+focus_mode = 2
+text = "save"
+
+[node name="btn_load" parent="HUD/top_left" instance=ExtResource( 2 )]
+margin_left = 110.0
+margin_top = 10.0
+margin_right = 170.0
+margin_bottom = 37.0
+focus_mode = 2
+text = "load"
+
 [node name="top_right" type="Control" parent="HUD"]
 anchor_left = 1.0
 anchor_right = 1.0
@@ -398,3 +422,5 @@ current = true
 [connection signal="pressed" from="HUD/graph/Control/btn_zoomy_less" to="." method="_on_btn_zoomy_less_pressed"]
 [connection signal="pressed" from="HUD/graph/Control/btn_zoomy_more" to="." method="_on_btn_zoomy_more_pressed"]
 [connection signal="pressed" from="HUD/graph/Control/ScrollContainer/ItemList2/wire" to="." method="_on_wire_pressed"]
+[connection signal="pressed" from="HUD/top_left/btn_save" to="." method="_on_btn_save_pressed"]
+[connection signal="pressed" from="HUD/top_left/btn_load" to="." method="_on_btn_load_pressed"]

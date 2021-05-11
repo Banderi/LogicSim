@@ -132,6 +132,11 @@ func _input(event):
 				for o in owner_node.get_child(1).get_children():
 					for w in o.wires_list:
 						w.redraw()
+
+				# delegate updates to MAIN;
+				# ask owner to bundle array of node data, which will then update
+				# the correct field in the memory struct by use of their TOKEN
+				owner_node.update_node_data(self)
 		elif logic.main.buildmode_stage == null:
 			if Input.is_action_just_released("mouse_left"):
 				enabled = !enabled

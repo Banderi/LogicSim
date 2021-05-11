@@ -175,13 +175,13 @@ var circuits = {
 		"color": "000000",
 		"circuits": {
 			-999: [ # free floating pins
-				[null, Vector2(-400, -200), 100],
+				[null, Vector2(-400, -200), true, 100],
 				[null, Vector2(-400, -100)],
-				[null, Vector2(-400, 0), -100],
+				[null, Vector2(-400, 0), true, -100],
 
-				[null, Vector2(-100, -200), 50],
+				[null, Vector2(-100, -200), true, 50],
 				[null, Vector2(-100, -100)],
-				[null, Vector2(-100, 0), 0],
+				[null, Vector2(-100, 0), true, 0],
 			],
 			-998: [ # wire-based component
 				[null, [0,0], [1,0]], # from circuit 0 (ouput 0) to circuit 1 (input 0)

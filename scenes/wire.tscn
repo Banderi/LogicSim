@@ -66,5 +66,6 @@ align = 1
 __meta__ = {
 "_edit_use_anchors_": false
 }
+
 [connection signal="mouse_entered" from="wire/bg/bg" to="." method="_on_bg_mouse_entered"]
 [connection signal="mouse_exited" from="wire/bg/bg" to="." method="_on_bg_mouse_exited"]

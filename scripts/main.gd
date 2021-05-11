@@ -48,13 +48,13 @@ func get_pin_from_token(token, p):
 func generate_new_token():
 	for token in range(0, 99):
 		if !node_token_list.has(token):
-			print(token)
 			return token
 	return null # oh no, out of space!
 func register_token(node, token):
-#	var token = generate_new_token()
 	node.node_token = token
 	node_token_list[token] = node
+func unregister_token(token):
+	node_token_list.erase(token)
 
 func add_input_node(i):
 	var newinput = INPUT.instance()
@@ -70,17 +70,17 @@ func add_output_node(o):
 	newoutput.get_node("Label").text = o[0]
 	outputs.add_child(newoutput)
 	circuitdata["outputs"].push_back(o)
-func add_circuit_node(id, data): # needed for in-game circuit spawn
+func add_circuit_node(type, data): # needed for in-game circuit spawn
 
 	# get new token for node
 	if data[0] == null:
 		data[0] = generate_new_token()
 
-	match id:
+	match type:
 		-999:
 			add_freepin_node(data)
 		-998:
-			add_wire_based_node(id, data)
+			add_wire_based_node(type, data)
 		-201:
 			var ac = ACGEN.instance()
 			ac.position = data[0]
@@ -88,11 +88,11 @@ func add_circuit_node(id, data): # needed for in-game circuit spawn
 		_:
 			var newgate = GATE.instance()
 			newgate.rect_position = data[0]
-			newgate.load_circuit(id)
+			newgate.load_circuit(type)
 			nodes.add_child(newgate)
-	if !circuitdata["circuits"].has(id):
-		circuitdata["circuits"][id] = []
-	circuitdata["circuits"][id].push_back(data)
+	if !circuitdata["circuits"].has(type):
+		circuitdata["circuits"][type] = []
+	circuitdata["circuits"][type].push_back(data)
 
 func add_freepin_node(a):
 	var freepin = FREEPIN.instance()
@@ -100,19 +100,19 @@ func add_freepin_node(a):
 
 	var pin = freepin.get_child(0).get_child(0)
 
-	if (a.size() > 2): # additional values
-		pin.is_source = true
-		pin.tension_static = float(a[2])
-		pin.tension_amplitude = float(a[3]) if a.size() > 3 else 0
-		pin.tension_speed = float(a[4]) if a.size() > 4 else 0
-		pin.tension_phase = float(a[5]) if a.size() > 5 else 0
+	if (a.size() > 3): # additional values
+		pin.is_source = float(a[2])
+		pin.tension_static = float(a[3])
+		pin.tension_amplitude = float(a[4]) if a.size() > 4 else 0
+		pin.tension_speed = float(a[5]) if a.size() > 5 else 0
+		pin.tension_phase = float(a[6]) if a.size() > 6 else 0
 
 	# node id info
 	freepin.node_type = -999
 	register_token(freepin, a[0])
 
 	nodes.add_child(freepin)
-func add_wire_based_node(id, a):
+func add_wire_based_node(type, a):
 	var newwire = WIRE.instance()
 	var orig_pin = get_pin_from_token(a[1][0], a[1][1])
 	var dest_pin = get_pin_from_token(a[2][0], a[2][1])
@@ -156,7 +156,7 @@ func add_wire_based_node(id, a):
 	newwire.inductance = a[5] if a.size() > 5 else 0.0
 
 	# node id info
-	newwire.node_type = id
+	newwire.node_type = type
 	register_token(newwire, a[0])
 
 	wires.add_child(newwire)
@@ -178,6 +178,7 @@ func unload_circuit():
 	for n in wires.get_children():
 		n.free()
 	node_token_list = {}
+	logic.probe.attach(null, -1)
 func save_circuit(n):
 	logic.circuits[n] = circuitdata
 func load_circuit(n):
@@ -197,6 +198,19 @@ func load_circuit(n):
 		var list_of_such = to_load_from["circuits"][id]
 		for data in list_of_such:
 			add_circuit_node(id, data)
+
+func update_node_data(token, data):
+
+	# traverse memory struct and look for item with correct TOKEN
+	for t in circuitdata["circuits"].keys():
+		for i in circuitdata["circuits"][t].size():
+			if circuitdata["circuits"][t][i][0] == token: # BINGO!
+				data.push_front(token)
+				circuitdata["circuits"][t][i] = data
+				print("Node " + str(token) + " was updated with data " + str(data))
+				return true
+	print("Could not find node " + str(token))
+	return false
 
 ###
 
@@ -246,17 +260,17 @@ func tooltip(txt):
 var buildmode_circuit = null
 var buildmode_stage = null
 var buildmode_last_pin = null
-func start_placing_node(id):
+func buildmode_start(id):
 	buildmode_circuit = id
 	buildmode_stage = 0
 	buildmode_last_pin = null
 	tooltip("Select starting pin")
-func terminate_node_placement():
+func buildmode_terminate():
 	buildmode_circuit = null
 	buildmode_stage = null
 	buildmode_last_pin = null
 	tooltip("")
-func attach_node_to_pin(pin):
+func buildmode_push_stage(pin):
 	match buildmode_stage:
 		0:
 			tooltip("Select destination pin")
@@ -266,13 +280,25 @@ func attach_node_to_pin(pin):
 			if buildmode_last_pin.pin_neighbors.has(pin):
 				tooltip("You can't overlap wires!")
 			else:
-				add_wire_based_node(-998, [
+				add_circuit_node(-998, [
 						generate_new_token(),
 						[buildmode_last_pin.get_parent().get_parent().node_token, 0],
 						[pin.get_parent().get_parent().node_token, 0]
 					])
-				terminate_node_placement()
-
+				buildmode_terminate()
+func buildmode_remove_node(node, head = true):
+	if head:
+		match node.node_type:
+			-999:
+				for w in node.wires_list:
+					buildmode_remove_node(w, false)
+			-998:
+				node.orig_pin.wires_list.erase(node)
+				node.dest_pin.wires_list.erase(node)
+#				buildmode_remove_node(node.orig_pin, false)
+#				buildmode_remove_node(node.dest_pin, false)
+	unregister_token(node.node_token)
+	node.queue_free()
 
 var node_selection = null
 var local_event_drag_start = null
@@ -329,10 +355,10 @@ func _input(event):
 
 	if buildmode_stage != null:
 		if Input.is_action_just_released("mouse_right"):
-			terminate_node_placement()
+			buildmode_terminate()
 		if Input.is_action_just_released("mouse_left") || Input.is_action_pressed("mouse_left") && local_event_drag_start != local_event_drag_corrected:
 			if node_selection != null && node_selection != buildmode_last_pin && node_selection.node_type == -999:
-				attach_node_to_pin(node_selection)
+				buildmode_push_stage(node_selection)
 
 	# camera scrolling and dragging
 	if event is InputEventMouseButton:
@@ -404,7 +430,21 @@ func _on_btn_zoomy_less_pressed():
 func _on_btn_zoomy_more_pressed():
 	logic.probe.zoom_ver(1, self)
 
+###
+
+func _on_btn_save_pressed():
+	save_circuit(3)
+
+func _on_btn_load_pressed():
+	load_circuit(3)
+
+func _on_btn_settings_pressed():
+	pass
+
+func _on_btn_about_pressed():
+	pass
+
 #####
 
 func _on_wire_pressed():
-	start_placing_node(-998)
+	buildmode_start(-998)
