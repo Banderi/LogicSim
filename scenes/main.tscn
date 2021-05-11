@@ -45,7 +45,16 @@ __meta__ = {
 "_edit_lock_": true
 }
 
-[node name="Line2D2" type="Line2D" parent="BACK/cursor"]
+[node name="cursor2" type="Node2D" parent="BACK"]
+scale = Vector2( 0.4, 0.4 )
+z_index = 10
+z_as_relative = false
+__meta__ = {
+"_edit_group_": true,
+"_edit_lock_": true
+}
+
+[node name="Line2D2" type="Line2D" parent="BACK/cursor2"]
 z_index = 10
 z_as_relative = false
 points = PoolVector2Array( 0, 20, 0, 70 )
@@ -55,7 +64,7 @@ __meta__ = {
 "_edit_lock_": true
 }
 
-[node name="Line2D3" type="Line2D" parent="BACK/cursor"]
+[node name="Line2D3" type="Line2D" parent="BACK/cursor2"]
 rotation = 1.5708
 z_index = 10
 z_as_relative = false
@@ -66,7 +75,7 @@ __meta__ = {
 "_edit_lock_": true
 }
 
-[node name="Line2D4" type="Line2D" parent="BACK/cursor"]
+[node name="Line2D4" type="Line2D" parent="BACK/cursor2"]
 rotation = 3.14159
 z_index = 10
 z_as_relative = false
@@ -77,11 +86,63 @@ __meta__ = {
 "_edit_lock_": true
 }
 
-[node name="Line2D5" type="Line2D" parent="BACK/cursor"]
+[node name="Line2D5" type="Line2D" parent="BACK/cursor2"]
 rotation = -1.5708
 z_index = 10
 z_as_relative = false
 points = PoolVector2Array( 0, 20, 0, 70 )
+width = 12.0
+default_color = Color( 0, 0.741176, 1, 1 )
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="cursor3" type="Node2D" parent="BACK"]
+scale = Vector2( 0.4, 0.4 )
+z_index = 10
+z_as_relative = false
+__meta__ = {
+"_edit_group_": true,
+"_edit_lock_": true
+}
+
+[node name="Line2D2" type="Line2D" parent="BACK/cursor3"]
+z_index = 10
+z_as_relative = false
+points = PoolVector2Array( 0, 35, 0, 70 )
+width = 12.0
+default_color = Color( 0, 0.741176, 1, 1 )
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="Line2D3" type="Line2D" parent="BACK/cursor3"]
+rotation = 1.5708
+z_index = 10
+z_as_relative = false
+points = PoolVector2Array( 0, 35, 0, 70 )
+width = 12.0
+default_color = Color( 0, 0.741176, 1, 1 )
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="Line2D4" type="Line2D" parent="BACK/cursor3"]
+rotation = 3.14159
+z_index = 10
+z_as_relative = false
+points = PoolVector2Array( 0, 35, 0, 70 )
+width = 12.0
+default_color = Color( 0, 0.741176, 1, 1 )
+__meta__ = {
+"_edit_lock_": true
+}
+
+[node name="Line2D5" type="Line2D" parent="BACK/cursor3"]
+rotation = -1.5708
+z_index = 10
+z_as_relative = false
+points = PoolVector2Array( 0, 35, 0, 70 )
 width = 12.0
 default_color = Color( 0, 0.741176, 1, 1 )
 __meta__ = {
@@ -253,32 +314,26 @@ __meta__ = {
 "_edit_lock_": true
 }
 
-[node name="diode" parent="HUD/graph/Control/ScrollContainer/ItemList" instance=ExtResource( 5 )]
+[node name="eraser" parent="HUD/graph/Control/ScrollContainer/ItemList" instance=ExtResource( 5 )]
 margin_right = 112.0
 margin_bottom = 50.0
 rect_min_size = Vector2( 10, 50 )
-text = "diode"
+focus_mode = 2
+text = "eraser"
 
-[node name="resistor" parent="HUD/graph/Control/ScrollContainer/ItemList" instance=ExtResource( 5 )]
+[node name="wire" parent="HUD/graph/Control/ScrollContainer/ItemList" instance=ExtResource( 5 )]
 margin_top = 54.0
 margin_right = 112.0
 margin_bottom = 104.0
 rect_min_size = Vector2( 10, 50 )
-text = "resistor"
+text = "wire"
 
-[node name="capacitor" parent="HUD/graph/Control/ScrollContainer/ItemList" instance=ExtResource( 5 )]
+[node name="pin" parent="HUD/graph/Control/ScrollContainer/ItemList" instance=ExtResource( 5 )]
 margin_top = 108.0
 margin_right = 112.0
 margin_bottom = 158.0
 rect_min_size = Vector2( 10, 50 )
-text = "capacit."
-
-[node name="inductor" parent="HUD/graph/Control/ScrollContainer/ItemList" instance=ExtResource( 5 )]
-margin_top = 162.0
-margin_right = 112.0
-margin_bottom = 212.0
-rect_min_size = Vector2( 10, 50 )
-text = "inductor"
+text = "pin"
 
 [node name="ItemList2" type="VBoxContainer" parent="HUD/graph/Control/ScrollContainer"]
 anchor_left = 1.0
@@ -293,18 +348,32 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="pin" parent="HUD/graph/Control/ScrollContainer/ItemList2" instance=ExtResource( 5 )]
+[node name="diode" parent="HUD/graph/Control/ScrollContainer/ItemList2" instance=ExtResource( 5 )]
 margin_right = 112.0
 margin_bottom = 50.0
 rect_min_size = Vector2( 10, 50 )
-text = "pin"
+text = "diode"
 
-[node name="wire" parent="HUD/graph/Control/ScrollContainer/ItemList2" instance=ExtResource( 5 )]
+[node name="resistor" parent="HUD/graph/Control/ScrollContainer/ItemList2" instance=ExtResource( 5 )]
 margin_top = 54.0
 margin_right = 112.0
 margin_bottom = 104.0
 rect_min_size = Vector2( 10, 50 )
-text = "wire"
+text = "resistor"
+
+[node name="capacitor" parent="HUD/graph/Control/ScrollContainer/ItemList2" instance=ExtResource( 5 )]
+margin_top = 108.0
+margin_right = 112.0
+margin_bottom = 158.0
+rect_min_size = Vector2( 10, 50 )
+text = "capacit."
+
+[node name="inductor" parent="HUD/graph/Control/ScrollContainer/ItemList2" instance=ExtResource( 5 )]
+margin_top = 162.0
+margin_right = 112.0
+margin_bottom = 212.0
+rect_min_size = Vector2( 10, 50 )
+text = "inductor"
 
 [node name="top_left" type="Control" parent="HUD"]
 margin_right = 40.0
@@ -421,6 +490,8 @@ current = true
 [connection signal="pressed" from="HUD/graph/Control/btn_zoomx_more" to="." method="_on_btn_zoomx_more_pressed"]
 [connection signal="pressed" from="HUD/graph/Control/btn_zoomy_less" to="." method="_on_btn_zoomy_less_pressed"]
 [connection signal="pressed" from="HUD/graph/Control/btn_zoomy_more" to="." method="_on_btn_zoomy_more_pressed"]
-[connection signal="pressed" from="HUD/graph/Control/ScrollContainer/ItemList2/wire" to="." method="_on_wire_pressed"]
+[connection signal="pressed" from="HUD/graph/Control/ScrollContainer/ItemList/eraser" to="." method="_on_eraser_pressed"]
+[connection signal="pressed" from="HUD/graph/Control/ScrollContainer/ItemList/wire" to="." method="_on_wire_pressed"]
+[connection signal="pressed" from="HUD/graph/Control/ScrollContainer/ItemList/pin" to="." method="_on_pin_pressed"]
 [connection signal="pressed" from="HUD/top_left/btn_save" to="." method="_on_btn_save_pressed"]
 [connection signal="pressed" from="HUD/top_left/btn_load" to="." method="_on_btn_load_pressed"]

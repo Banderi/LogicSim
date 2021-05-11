@@ -18,6 +18,8 @@ onready var nodes = $circuit/nodes
 onready var wires = $circuit/wires
 
 onready var cursor = $BACK/cursor
+onready var cursor2 = $BACK/cursor2
+onready var cursor3 = $BACK/cursor3
 
 var circuitdata = {
 	"name": "",
@@ -110,6 +112,7 @@ func add_freepin_node(a):
 	# node id info
 	freepin.node_type = -999
 	register_token(freepin, a[0])
+#	pin.node_token = a[0] # terminating pin node also has a token field...
 
 	nodes.add_child(freepin)
 func add_wire_based_node(type, a):
@@ -205,12 +208,18 @@ func update_node_data(token, data):
 	for t in circuitdata["circuits"].keys():
 		for i in circuitdata["circuits"][t].size():
 			if circuitdata["circuits"][t][i][0] == token: # BINGO!
-				data.push_front(token)
-				circuitdata["circuits"][t][i] = data
-				print("Node " + str(token) + " was updated with data " + str(data))
+				if data == null:
+					circuitdata["circuits"][t].erase(circuitdata["circuits"][t][i])
+					print("Node " + str(token) + " was removed!")
+				else:
+					data.push_front(token)
+					circuitdata["circuits"][t][i] = data
+					print("Node " + str(token) + " was updated with data " + str(data))
 				return true
 	print("Could not find node " + str(token))
 	return false
+func erase_node_data(token):
+	update_node_data(token, null)
 
 ###
 
@@ -257,16 +266,16 @@ func tooltip(txt):
 
 ###
 
-var buildmode_circuit = null
+var buildmode_circuit_type = null
 var buildmode_stage = null
 var buildmode_last_pin = null
-func buildmode_start(id):
-	buildmode_circuit = id
+func buildmode_start(type):
+	buildmode_circuit_type = type
 	buildmode_stage = 0
 	buildmode_last_pin = null
 	tooltip("Select starting pin")
 func buildmode_terminate():
-	buildmode_circuit = null
+	buildmode_circuit_type = null
 	buildmode_stage = null
 	buildmode_last_pin = null
 	tooltip("")
@@ -287,17 +296,31 @@ func buildmode_push_stage(pin):
 					])
 				buildmode_terminate()
 func buildmode_remove_node(node, head = true):
-	if head:
-		match node.node_type:
-			-999:
-				for w in node.wires_list:
-					buildmode_remove_node(w, false)
-			-998:
-				node.orig_pin.wires_list.erase(node)
-				node.dest_pin.wires_list.erase(node)
-#				buildmode_remove_node(node.orig_pin, false)
-#				buildmode_remove_node(node.dest_pin, false)
-	unregister_token(node.node_token)
+	if !node.can_interact:
+		tooltip("Can not delete slave node!")
+		return
+#	if head:
+	match node.node_type:
+		-999: # if removing a pin, delete attached wires as well
+			for w in node.wires_list:
+				buildmode_remove_node(w, false)
+		-998: # if removing a wire, detach from adjacent pins
+			node.orig_pin.wires_list.erase(node)
+			node.orig_pin.pin_neighbors.erase(node.dest_pin)
+			node.dest_pin.wires_list.erase(node)
+			node.dest_pin.pin_neighbors.erase(node.orig_pin)
+
+	var token = null
+	if "owner_node" in node:
+		token = node.owner_node.node_token
+	else:
+		token = node.node_token
+	unregister_token(token)
+	erase_node_data(token)
+	if node_selection == node:
+		node_selection = null
+	if logic.probe.probing == node:
+		logic.probe.attach(null, -1)
 	node.queue_free()
 
 var node_selection = null
@@ -356,9 +379,13 @@ func _input(event):
 	if buildmode_stage != null:
 		if Input.is_action_just_released("mouse_right"):
 			buildmode_terminate()
-		if Input.is_action_just_released("mouse_left") || Input.is_action_pressed("mouse_left") && local_event_drag_start != local_event_drag_corrected:
-			if node_selection != null && node_selection != buildmode_last_pin && node_selection.node_type == -999:
-				buildmode_push_stage(node_selection)
+		if buildmode_circuit_type == null: # deleting!!
+			if Input.is_action_just_released("mouse_left") && node_selection != null:
+				buildmode_remove_node(node_selection)
+		else:
+			if Input.is_action_just_released("mouse_left"): # || (Input.is_action_pressed("mouse_left") && local_event_drag_start != local_event_drag_corrected):
+				if node_selection != null && node_selection != buildmode_last_pin && node_selection.node_type == -999:
+					buildmode_push_stage(node_selection)
 
 	# camera scrolling and dragging
 	if event is InputEventMouseButton:
@@ -368,16 +395,19 @@ func _input(event):
 			camera.zoom *= 1.0 / 0.75
 	if event is InputEventMouseMotion:
 		mouse_position = event.position
-		local_event_drag_corrected = get_global_mouse_position()
-		if selection_mode & 2:
+		local_event_drag_corrected = get_global_mouse_position() # update cursor position pointer
+
+		if selection_mode & 2: # snap to grid!
 			local_event_drag_corrected.x = round(local_event_drag_corrected.x / 50.0) * 50.0
 			local_event_drag_corrected.y = round(local_event_drag_corrected.y / 50.0) * 50.0
-		elif drag_button & 2:
+		elif drag_button & 2: # drag camera around
 			camera.position = orig_camera_point + (orig_drag_point_middle - mouse_position) * camera.zoom
 			camera.position.x = clamp(camera.position.x, -max_camera_pan, max_camera_pan)
 			camera.position.y = clamp(camera.position.y, -max_camera_pan, max_camera_pan)
-		if node_selection != null && node_selection.node_type == -999:
-			local_event_drag_corrected = node_selection.get_parent().get_parent().position
+
+		# keep cursor centered on focused pin IF not doing other actions e.g. dragging
+		if node_selection != null && node_selection.node_type == -999 && !Input.is_action_pressed("mouse_left"):
+			local_event_drag_corrected = node_selection.owner_node.position
 	camera.zoom.x = clamp(camera.zoom.x, 0.5625, 9.98872123152)
 	camera.zoom.y = clamp(camera.zoom.y, 0.5625, 9.98872123152)
 
@@ -385,26 +415,41 @@ func _input(event):
 	if buildmode_stage == null:
 		circuit.modulate.a = 1.0
 		cursor.visible = false
+		cursor2.visible = false
+		cursor3.visible = false
 	else:
 		circuit.modulate.a = 0.5
-		cursor.visible = true
-#		cursor.scale = Vector2(0.4, 0.4) * camera.zoom
-		if local_event_drag_start == null:
-			cursor.position = local_event_drag_corrected
-		else:
+		cursor2.visible = true
+		cursor3.visible = true
+
+		cursor.position = local_event_drag_corrected
+		cursor2.position = local_event_drag_corrected
+		cursor3.position = local_event_drag_corrected
+
+		if local_event_drag_start != null:
 			cursor.position = local_event_drag_start
-		if node_selection == null:
-			$BACK/cursor/Line2D.visible = false
-#			cursor.rotation_degrees = 0
-		elif node_selection.node_type == -999:
-			$BACK/cursor/Line2D.visible = true
-#			cursor.rotation_degrees = 0
-#			cursor.rotation_degrees = 45
+			cursor3.position = local_event_drag_start
+		if buildmode_last_pin != null:
+			cursor.position = buildmode_last_pin.owner_node.position
+			cursor3.position = buildmode_last_pin.owner_node.position
+
+		if node_selection != null  && node_selection.node_type == -999:
+			cursor.visible = true
+		else:
+			cursor.visible = false
+
+#		if node_selection == null:
+#			cursor.visible = false
+#		elif node_selection.node_type == -999:
+#			cursor.visible = true
+#			cursor2.visible = false
+#			cursor3.visible = true
 
 	# update debug key display
-	$HUD/bottom_left/keys.text = str(buildmode_circuit) + " : " + str(buildmode_stage) + " : " + str(buildmode_last_pin) # + " " + str(get_node_pin_id(buildmode_last_pin))
+	$HUD/bottom_left/keys.text = str(buildmode_circuit_type) + " : " + str(buildmode_stage) + " : " + str(buildmode_last_pin) # + " " + str(get_node_pin_id(buildmode_last_pin))
 	$HUD/bottom_left/keys.text += "\n" + str(node_selection) # + " " + str(get_node_pin_id(node_selection))
 	$HUD/bottom_left/keys.text += "\n" + str(drag_button) + " " + str(selection_mode)
+	$HUD/bottom_left/keys.text += "\n" + str(local_event_drag_start) + " " + str(local_event_drag_corrected)
 	$HUD/bottom_left/keys.text += "\n" + str(camera.position)
 	$HUD/bottom_left/keys.text += "\n" + str(camera.zoom)
 	$HUD/bottom_left/keys.text += "\n" + str(cursor.position)
@@ -446,5 +491,11 @@ func _on_btn_about_pressed():
 
 #####
 
+func _on_eraser_pressed():
+	buildmode_start(null)
+
 func _on_wire_pressed():
 	buildmode_start(-998)
+
+func _on_pin_pressed():
+	buildmode_start(-999)

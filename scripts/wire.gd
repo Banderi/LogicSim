@@ -29,16 +29,6 @@ var reactance_inv = 1.0
 var capacitance = 0.0
 var inductance = 0.0
 
-var focused = false
-func _on_bg_mouse_entered():
-	focused = true
-	$L/Label.visible = true
-	logic.main.node_selection = self
-
-func _on_bg_mouse_exited():
-	focused = false
-	$L/Label.visible = false
-
 func attach(orig, dest):
 	orig_pin = orig
 	dest_pin = dest
@@ -212,3 +202,13 @@ func _input(event):
 		if logic.main.buildmode_stage == null:
 			if Input.is_action_just_released("mouse_right"):
 				logic.probe.attach(self, 1)
+
+var focused = false
+func _on_bg_mouse_entered():
+	focused = true
+	$L/Label.visible = true
+	logic.main.node_selection = self
+
+func _on_bg_mouse_exited():
+	focused = false
+	$L/Label.visible = false

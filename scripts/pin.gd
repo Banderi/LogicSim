@@ -2,7 +2,7 @@ extends Node
 
 export(bool) var can_interact = true
 var node_type = -999
-#var node_token = null
+#var node_token = null # inherited from parent?
 
 export(bool) var input = true
 
