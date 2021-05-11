@@ -29,6 +29,17 @@ __meta__ = {
 "_edit_lock_": true
 }
 
+[node name="cursorline" type="Line2D" parent="BACK"]
+visible = false
+z_index = 10
+z_as_relative = false
+points = PoolVector2Array( 0, 35, 150, 350 )
+width = 6.0
+default_color = Color( 0, 0.741176, 1, 1 )
+__meta__ = {
+"_edit_lock_": true
+}
+
 [node name="cursor" type="Node2D" parent="BACK"]
 scale = Vector2( 0.4, 0.4 )
 z_index = 10

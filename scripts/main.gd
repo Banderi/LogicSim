@@ -20,6 +20,7 @@ onready var wires = $circuit/wires
 onready var cursor = $BACK/cursor
 onready var cursor2 = $BACK/cursor2
 onready var cursor3 = $BACK/cursor3
+onready var cursorline = $BACK/cursorline
 
 var circuitdata = {
 	"name": "",
@@ -302,7 +303,8 @@ func buildmode_remove_node(node, head = true):
 #	if head:
 	match node.node_type:
 		-999: # if removing a pin, delete attached wires as well
-			for w in node.wires_list:
+			var wirelist = node.wires_list.duplicate() # prevent array updates while iterating over it >:(
+			for w in wirelist:
 				buildmode_remove_node(w, false)
 		-998: # if removing a wire, detach from adjacent pins
 			node.orig_pin.wires_list.erase(node)
@@ -417,10 +419,13 @@ func _input(event):
 		cursor.visible = false
 		cursor2.visible = false
 		cursor3.visible = false
+		cursorline.visible = false
 	else:
 		circuit.modulate.a = 0.5
+		cursor.visible = true
 		cursor2.visible = true
 		cursor3.visible = true
+#		cursorline.visible = true
 
 		cursor.position = local_event_drag_corrected
 		cursor2.position = local_event_drag_corrected
@@ -432,11 +437,14 @@ func _input(event):
 		if buildmode_last_pin != null:
 			cursor.position = buildmode_last_pin.owner_node.position
 			cursor3.position = buildmode_last_pin.owner_node.position
-
-		if node_selection != null  && node_selection.node_type == -999:
-			cursor.visible = true
-		else:
+			cursorline.visible = true
+			cursorline.points = [
+				buildmode_last_pin.owner_node.position,
+				local_event_drag_corrected
+			]
+		if node_selection == null: # || node_selection.node_type == -999:
 			cursor.visible = false
+#			cursorline.visible = false
 
 #		if node_selection == null:
 #			cursor.visible = false
