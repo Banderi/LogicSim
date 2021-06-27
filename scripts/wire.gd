@@ -197,17 +197,28 @@ func _ready():
 	$L/Label.visible = false
 	update_conductance()
 
+onready var hover_element = $wire/bg/bg
 func _input(event):
+
+	# check if mouse is ACTUALLY inside the element
+	var local_p = hover_element.get_local_mouse_position()
+	var local_r = hover_element.get_global_rect()
+	var size_r = Rect2(Vector2(0,0), local_r.size)
+	if size_r.has_point(local_p):
+		soft_focus = true
+		logic.main.node_selection = self
+	else:
+		soft_focus = false
+
 	if focused:
-		if logic.main.buildmode_stage == null:
-			if Input.is_action_just_released("mouse_right"):
-				logic.probe.attach(self, 1)
+		if logic.main.buildmode_stage == null && Input.is_action_just_released("mouse_right"):
+			logic.probe.attach(self, 1)
 
 var focused = false
+var soft_focus = false
 func _on_bg_mouse_entered():
 	focused = true
 	$L/Label.visible = true
-	logic.main.node_selection = self
 
 func _on_bg_mouse_exited():
 	focused = false

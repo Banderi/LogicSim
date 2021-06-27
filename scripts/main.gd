@@ -349,6 +349,8 @@ func _input(event):
 		selection_mode += 2
 	if Input.is_action_pressed("alt"):
 		selection_mode += 4
+	if Input.is_action_pressed("space"):
+		selection_mode += 8
 	# click to drag pin/node around
 	if selection_mode & 1 && buildmode_stage == null:
 		edit_moving = true
@@ -365,18 +367,29 @@ func _input(event):
 		drag_button += 4
 
 	# mouse clicks!
-	if Input.is_action_just_pressed("mouse_middle"):
-		orig_drag_point_middle = mouse_position
-		orig_camera_point = camera.position
 	if Input.is_action_just_pressed("mouse_left"):
 		orig_drag_point_left = mouse_position
 		local_event_drag_start = local_event_drag_corrected
-	if Input.is_action_just_released("mouse_middle"):
-		orig_drag_point_middle = null
-		orig_camera_point = null
+	if Input.is_action_just_pressed("mouse_middle"):
+		orig_drag_point_middle = mouse_position
+		orig_camera_point = camera.position
+	if Input.is_action_just_pressed("mouse_right"):
+		orig_drag_point_right = mouse_position
+
 	if Input.is_action_just_released("mouse_left"):
 		orig_drag_point_left = null
 		local_event_drag_start = null
+	if Input.is_action_just_released("mouse_middle"):
+		orig_drag_point_middle = null
+		orig_camera_point = null
+	if Input.is_action_just_released("mouse_right"):
+		orig_drag_point_right = null
+
+	# additional camera dragging (space)
+	if selection_mode & 8:
+		if Input.is_action_just_pressed("mouse_left") || Input.is_action_just_pressed("mouse_right"):
+			orig_camera_point = camera.position
+
 
 	if buildmode_stage != null:
 		if Input.is_action_just_released("mouse_right"):
@@ -402,8 +415,17 @@ func _input(event):
 		if selection_mode & 2: # snap to grid!
 			local_event_drag_corrected.x = round(local_event_drag_corrected.x / 50.0) * 50.0
 			local_event_drag_corrected.y = round(local_event_drag_corrected.y / 50.0) * 50.0
-		elif drag_button & 2: # drag camera around
-			camera.position = orig_camera_point + (orig_drag_point_middle - mouse_position) * camera.zoom
+		elif drag_button & 2 || (selection_mode & 8 && drag_button != 0): # drag camera around
+
+			var orig_drag_point = null
+			if drag_button & 1:
+				orig_drag_point = orig_drag_point_left
+			elif drag_button & 2:
+				orig_drag_point = orig_drag_point_middle
+			elif drag_button & 4:
+				orig_drag_point = orig_drag_point_right
+
+			camera.position = orig_camera_point + (orig_drag_point - mouse_position) * camera.zoom
 			camera.position.x = clamp(camera.position.x, -max_camera_pan, max_camera_pan)
 			camera.position.y = clamp(camera.position.y, -max_camera_pan, max_camera_pan)
 

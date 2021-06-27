@@ -18,7 +18,6 @@ var owner_node = null
 var init_arr = null
 
 var enabled = true
-var focused = false
 var oldtension = 0.0
 var tension = 0.0
 
@@ -104,15 +103,20 @@ func _process(delta):
 
 	$Pin.color = color
 
-func _on_Pin_mouse_entered():
-	focused = true
-	logic.main.node_selection = self
-
-func _on_Pin_mouse_exited():
-	focused = false
-
 var orig_position = Vector2()
+onready var hover_element = $Pin
 func _input(event):
+
+	# check if mouse is ACTUALLY inside the element
+	var local_p = hover_element.get_local_mouse_position()
+	var local_r = hover_element.get_global_rect()
+	var size_r = Rect2(Vector2(0,0), local_r.size)
+	if size_r.has_point(local_p):
+		soft_focus = true
+		logic.main.node_selection = self
+	else:
+		soft_focus = false
+
 	if focused:
 		if logic.main.edit_moving:
 			if Input.is_action_just_pressed("mouse_left"):
@@ -142,6 +146,14 @@ func _input(event):
 				enabled = !enabled
 			if Input.is_action_just_released("mouse_right"):
 				logic.probe.attach(self, 0)
+
+var focused = false
+var soft_focus = false
+func _on_Pin_mouse_entered():
+	focused = true
+
+func _on_Pin_mouse_exited():
+	focused = false
 
 func _ready():
 	owner_node = get_parent().get_parent()

@@ -56,5 +56,6 @@ align = 1
 __meta__ = {
 "_edit_use_anchors_": false
 }
+
 [connection signal="mouse_entered" from="Pin" to="." method="_on_Pin_mouse_entered"]
 [connection signal="mouse_exited" from="Pin" to="." method="_on_Pin_mouse_exited"]
