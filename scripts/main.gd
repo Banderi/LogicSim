@@ -8,6 +8,8 @@ const FREEPIN = preload("res://scenes/free_pin.tscn")
 
 const ACGEN = preload("res://scenes/ac_generator.tscn")
 
+const LIST_BUTTON = preload("res://scenes/circuit_list_item.tscn")
+
 onready var camera = $Camera2D
 var max_camera_pan = 3000
 
@@ -21,6 +23,8 @@ onready var cursor = $BACK/cursor
 onready var cursor2 = $BACK/cursor2
 onready var cursor3 = $BACK/cursor3
 onready var cursorline = $BACK/cursorline
+
+onready var save_slot_list = $HUD/top_left/slots
 
 var circuitdata = {
 	"name": "",
@@ -224,6 +228,31 @@ func erase_node_data(token):
 
 ###
 
+func enumerate_savefiles():
+
+	# todo: find files in folder
+	var files = ["test"]
+
+	var n = 1 # start from 1 - I know, I know...
+	for c_f in files:
+
+		# add circuit to slot list
+		var btn = LIST_BUTTON.instance()
+		btn.rect_min_size.y = 30
+		btn.connect("button_down", self, "load_circuit", [n])
+		btn.text = c_f
+
+		save_slot_list.add_child(btn)
+
+		# continue...
+		n += 1
+
+
+
+
+
+###
+
 func _process(delta):
 	$BACK/grid.update()
 
@@ -249,6 +278,7 @@ func _draw():
 
 func _ready():
 	logic.main = self
+	enumerate_savefiles()
 	load_circuit(3)
 #	save_circuit(3)
 #	load_circuit(3)
@@ -332,13 +362,15 @@ var mouse_position = Vector2(0,0)
 var drag_button = 0
 var selection_mode = 0
 var edit_moving = false
-var orig_drag_point_left = null
-var orig_drag_point_middle = null
-var orig_drag_point_right = null
+var click_origin = {
+	"left" : null,
+	"middle" : null,
+	"right" : null
+}
 var orig_camera_point = null
 func _input(event):
 	# reset node selection
-	if node_selection != null && !node_selection.focused:
+	if node_selection != null && !node_selection.focused && !node_selection.soft_focus:
 		node_selection = null
 
 	# update input flags
@@ -368,22 +400,23 @@ func _input(event):
 
 	# mouse clicks!
 	if Input.is_action_just_pressed("mouse_left"):
-		orig_drag_point_left = mouse_position
+		click_origin.left = mouse_position
 		local_event_drag_start = local_event_drag_corrected
 	if Input.is_action_just_pressed("mouse_middle"):
-		orig_drag_point_middle = mouse_position
+		click_origin.middle = mouse_position
 		orig_camera_point = camera.position
 	if Input.is_action_just_pressed("mouse_right"):
-		orig_drag_point_right = mouse_position
+		click_origin.right = mouse_position
 
+	# mouse release!
 	if Input.is_action_just_released("mouse_left"):
-		orig_drag_point_left = null
+		click_origin.left = null
 		local_event_drag_start = null
 	if Input.is_action_just_released("mouse_middle"):
-		orig_drag_point_middle = null
+		click_origin.middle = null
 		orig_camera_point = null
 	if Input.is_action_just_released("mouse_right"):
-		orig_drag_point_right = null
+		click_origin.right = null
 
 	# additional camera dragging (space)
 	if selection_mode & 8:
@@ -417,17 +450,20 @@ func _input(event):
 			local_event_drag_corrected.y = round(local_event_drag_corrected.y / 50.0) * 50.0
 		elif drag_button & 2 || (selection_mode & 8 && drag_button != 0): # drag camera around
 
+			# determine which button was pressed
 			var orig_drag_point = null
 			if drag_button & 1:
-				orig_drag_point = orig_drag_point_left
+				orig_drag_point = click_origin.left
 			elif drag_button & 2:
-				orig_drag_point = orig_drag_point_middle
+				orig_drag_point = click_origin.middle
 			elif drag_button & 4:
-				orig_drag_point = orig_drag_point_right
+				orig_drag_point = click_origin.right
 
-			camera.position = orig_camera_point + (orig_drag_point - mouse_position) * camera.zoom
-			camera.position.x = clamp(camera.position.x, -max_camera_pan, max_camera_pan)
-			camera.position.y = clamp(camera.position.y, -max_camera_pan, max_camera_pan)
+			# make SURE it's valid!
+			if orig_drag_point != null:
+				camera.position = orig_camera_point + (orig_drag_point - mouse_position) * camera.zoom
+				camera.position.x = clamp(camera.position.x, -max_camera_pan, max_camera_pan)
+				camera.position.y = clamp(camera.position.y, -max_camera_pan, max_camera_pan)
 
 		# keep cursor centered on focused pin IF not doing other actions e.g. dragging
 		if node_selection != null && node_selection.node_type == -999 && !Input.is_action_pressed("mouse_left"):

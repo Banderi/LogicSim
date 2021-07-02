@@ -409,6 +409,23 @@ margin_bottom = 37.0
 focus_mode = 2
 text = "load"
 
+[node name="slots" type="VBoxContainer" parent="HUD/top_left"]
+margin_left = 10.0
+margin_top = 51.0
+margin_right = 218.0
+margin_bottom = 211.0
+rect_scale = Vector2( 1.25, 1.25 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="slot1" parent="HUD/top_left/slots" instance=ExtResource( 5 )]
+margin_right = 208.0
+margin_bottom = 30.0
+rect_min_size = Vector2( 10, 30 )
+focus_mode = 2
+text = "circuit_1"
+
 [node name="top_right" type="Control" parent="HUD"]
 anchor_left = 1.0
 anchor_right = 1.0

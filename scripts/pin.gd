@@ -111,7 +111,7 @@ func _input(event):
 	var local_p = hover_element.get_local_mouse_position()
 	var local_r = hover_element.get_global_rect()
 	var size_r = Rect2(Vector2(0,0), local_r.size)
-	if size_r.has_point(local_p):
+	if size_r.has_point(local_p) && logic.main.node_selection == null:
 		soft_focus = true
 		logic.main.node_selection = self
 	else:
