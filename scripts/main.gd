@@ -188,8 +188,15 @@ func unload_circuit():
 	node_token_list = {}
 	logic.probe.attach(null, -1)
 func save_circuit(n):
+	if n < 0:
+		return # lower than 0 are BUILT IN circuits
+	print("saving circuit " + str(n))
 	logic.circuits[n] = circuitdata
 func load_circuit(n):
+	if n < 0:
+		return # lower than 0 are BUILT IN circuits
+	print("loading circuit " + str(n))
+
 	unload_circuit() # *ALWAYS* depopulate first.
 
 	var to_load_from = logic.circuits[n]
@@ -206,6 +213,19 @@ func load_circuit(n):
 		var list_of_such = to_load_from["circuits"][id]
 		for data in list_of_such:
 			add_circuit_node(id, data)
+
+var saveloaddel_mode = -1
+func saveloaddel_button(n):
+	reset_btn_saveloaddel(-1)
+	match saveloaddel_mode:
+		0:
+			return save_circuit(n)
+		1:
+			return load_circuit(n)
+		2:
+			pass # todo: delete circuit!
+		_:
+			return
 
 func update_node_data(token, data):
 
@@ -228,28 +248,34 @@ func erase_node_data(token):
 
 ###
 
-func enumerate_savefiles():
+# todo: find files in folder
+func export_database():
+	pass
+func import_database():
+	pass
 
-	# todo: find files in folder
-	var files = ["test"]
+func enumerate_database():
 
-	var n = 1 # start from 1 - I know, I know...
-	for c_f in files:
+	# clear previous buttons
+	for btn in save_slot_list.get_children():
+		btn.free()
+
+	for c in logic.circuits:
+
+
+		var circuit_name = logic.circuits[c]["name"]
+
+
 
 		# add circuit to slot list
 		var btn = LIST_BUTTON.instance()
 		btn.rect_min_size.y = 30
-		btn.connect("button_down", self, "load_circuit", [n])
-		btn.text = c_f
+		btn.connect("button_down", self, "saveloaddel_button", [c])
+		btn.text = circuit_name
 
 		save_slot_list.add_child(btn)
 
 		# continue...
-		n += 1
-
-
-
-
 
 ###
 
@@ -278,18 +304,8 @@ func _draw():
 
 func _ready():
 	logic.main = self
-	enumerate_savefiles()
-	load_circuit(3)
-#	save_circuit(3)
-#	load_circuit(3)
-#	save_circuit(3)
-#	load_circuit(3)
-#	save_circuit(3)
-#	load_circuit(3)
-#	save_circuit(3)
-#	load_circuit(3)
-#	save_circuit(3)
-#	load_circuit(3)
+	enumerate_database()
+#	load_circuit(1)
 	tooltip("")
 
 func tooltip(txt):
@@ -534,11 +550,33 @@ func _on_btn_zoomy_more_pressed():
 
 ###
 
+func reset_btn_saveloaddel(n):
+	if n != 0:
+		$HUD/top_left/btn_save.pressed = false
+	if n != 1:
+		$HUD/top_left/btn_load.pressed = false
+	if n == -1:
+		save_slot_list.visible = false
+
 func _on_btn_save_pressed():
-	save_circuit(3)
+	reset_btn_saveloaddel(0)
+	if $HUD/top_left/btn_save.pressed:
+		saveloaddel_mode = 0
+		save_slot_list.visible = true
+	else:
+		saveloaddel_mode = -1
+		save_slot_list.visible = false
 
 func _on_btn_load_pressed():
-	load_circuit(3)
+	reset_btn_saveloaddel(1)
+	if $HUD/top_left/btn_load.pressed:
+		saveloaddel_mode = 1
+		save_slot_list.visible = true
+	else:
+		saveloaddel_mode = -1
+		save_slot_list.visible = false
+
+###
 
 func _on_btn_settings_pressed():
 	pass

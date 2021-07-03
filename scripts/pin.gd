@@ -122,7 +122,7 @@ func _input(event):
 			if Input.is_action_just_pressed("mouse_left"):
 				orig_position = owner_node.position
 			if event is InputEventMouseMotion && Input.is_action_pressed("mouse_left"):
-				owner_node.position = orig_position + (event.position - logic.main.orig_drag_point_left) * logic.main.camera.zoom
+				owner_node.position = orig_position + (event.position - logic.main.click_origin.left) * logic.main.camera.zoom
 
 				# grid snapping!
 				if logic.main.selection_mode & 2:

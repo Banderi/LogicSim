@@ -64,7 +64,7 @@ func proper(v, u, spaced = false, full_units = false, rectify = 1.0, digits = 0.
 
 # wires ALWAYS are laid out cascading from inputs to outputs -
 # will be rearranged automatically if a wire connects to INPUTS
-var circuits = {
+var base_circuits = {
 	-99: { # AND gate
 		"name": "and",
 		"inputs": [
@@ -103,72 +103,10 @@ var circuits = {
 			["l2"],
 			["l3"]
 		]
-	},
-
-	###
-
-	1: { # test
-		"name": "test",
-		"inputs": [
-			["Input A", 400],
-			["Input B", 500]
-		],
-		"outputs": [
-			["Output A", 400],
-			["Output B", 500]
-		],
-		"color": "b0b0b0",
-		"circuits": [ # single AND gate for now...
-			[-99,			# circuit ID (negatives are reserved)
-			 -100, -250]	# circuit position
-		],
-		# wires ALWAYS are laid out cascading from inputs to outputs -
-		# will be rearranged automatically if a wire connects to INPUTS
-		"wires": [
-
-
-
-			[ # wire one
-				[-99,0], [1,0] # from circuit -99 (ouput 0) to circuit 0 (input 0)
-			],
-			[ # wire two
-				[-99,0], [1,1] # from circuit -99 (ouput 0) to circuit 0 (input 1)
-			],
-			[ # wire three
-				[-99,1], [1,0] # from circuit -99 (ouput 1) to circuit 0 (input 1)
-			]
-		]
-	},
-
-	2: { # test2
-		"name": "AC setup",
-		"inputs": [],
-		"outputs": [],
-		"color": "000000",
-		"circuits": [
-			[-201, Vector2(-300, -120)],	# circuit position
-
-			[-999, Vector2(100, -180)],		# free floating pin
-			[-999, Vector2(100, 100)],		# free floating pin
-			[-999, Vector2(-300, 100)],		# free floating pin
-
-#			[-999, Vector2(-253, -90)],		# free floating pin
-		],
-		"wires": [
-			[[0,0], [1,0], 1], # from circuit 0 (ouput 0) to circuit 1 (input 0)
-			[[1,0], [2,0], 1],
-			[[2,0], [3,0], 1],
-			[[3,0], [0,0], 1],
-
-			[[0,1], [0,1], 1]
-
-#			[[0,0], [4,0]],
-#			[[0,1], [4,0]],
-#			[[0,2], [4,0]],
-		]
-	},
-
-	3: { # test3
+	}
+}
+var circuits = {
+	0: { # test3
 		"name": "test 3",
 		"inputs": [],
 		"outputs": [],
