@@ -38,6 +38,7 @@ func read(v, nam, u, col, absol = false, rectify = 1.0):
 		if s["name"] == nam:
 			set = s
 			found = true
+			s["rectify"] = rectify
 			break
 	if !found:
 		data.append(set)
@@ -170,7 +171,7 @@ func refresh_probes(tick = true):
 			0:
 				read(probing.tension, "Tension", "Volts", Color(1, 0, 0))
 			1:
-				read(probing.current, "Current", "Amps", Color(1, 1, 0), true)
+				read(probing.current, "Current", "Amps", Color(1, 1, 0), true, 500.0)
 				read(probing.voltage, "Voltage", "Volts", Color(1, 0, 0))
 				read(probing.resistance, "Resistance", "Ohms", Color(1, 0.5, 0))
 				read(probing.conductance, "Conductance", "Siemens", Color(0, 1, 1))

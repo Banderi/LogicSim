@@ -73,7 +73,7 @@ func sum_up_neighbor_tensions():
 	oldtension = tension
 	var tension_diff = overall_tension - tension
 	if (tn > 0):
-		tension += tension_diff
+		tension += tension_diff * 0.5
 
 	cleanup_tensions()
 
