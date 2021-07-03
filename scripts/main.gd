@@ -229,9 +229,12 @@ func saveloaddel_button(n):
 	reset_btn_saveloaddel(-1)
 	match saveloaddel_mode:
 		0:
-			return save_circuit(n)
+			save_circuit(n)
+			save_database() # on circuit save, serialize as well
+			return
 		1:
-			return load_circuit(n)
+			load_circuit(n)
+			return
 		2:
 			pass # todo: delete circuit!
 		_:
@@ -258,16 +261,39 @@ func erase_node_data(token):
 
 ###
 
+func savetofile(path, data):
+	var file = File.new()
+	file.open(path, File.WRITE)
+	file.store_var(data)
+	file.close()
+	print("Disk file '" + path + "' was modified")
+func loadfromfile(path):
+	var file = File.new()
+	if not file.file_exists(path):
+		return null
+	file.open(path, File.READ)
+	var data = file.get_var()
+	file.close()
+	print("Disk file '" + path + "' was loaded")
+	return data
+
+func save_database():
+	savetofile("user://circuits.dat", logic.circuits)
+
 # todo: find files in folder
 func export_database():
 	pass
 func import_database():
 	pass
-func enumerate_database():
+
+func reload_database():
 
 	# clear previous buttons
 	for btn in save_slot_list.get_children():
 		btn.free()
+
+	# reload database file
+	logic.circuits = loadfromfile("user://circuits.dat")
 
 	for c in logic.circuits:
 
@@ -311,7 +337,7 @@ func _draw():
 
 func _ready():
 	logic.main = self
-	enumerate_database()
+	reload_database()
 	load_circuit(0)
 	tooltip("")
 
@@ -646,6 +672,7 @@ func _on_btn_save_pressed():
 		save_slot_list.visible = false
 
 func _on_btn_load_pressed():
+	reload_database()
 	reset_btn_saveloaddel(1)
 	if $HUD/top_left/btn_load.pressed:
 		saveloaddel_mode = 1
