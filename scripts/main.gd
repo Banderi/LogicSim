@@ -79,27 +79,35 @@ func add_output_node(o):
 	circuitdata["outputs"].push_back(o)
 func add_circuit_node(type, data): # needed for in-game circuit spawn
 
+	# pointer to the new node element to return
+	var new_node_return = null
+
 	# get new token for node
 	if data[0] == null:
 		data[0] = generate_new_token()
 
 	match type:
 		-999:
-			add_freepin_node(data)
+			new_node_return = add_freepin_node(data)
 		-998:
-			add_wire_based_node(type, data)
+			new_node_return = add_wire_based_node(type, data)
 		-201:
 			var ac = ACGEN.instance()
 			ac.position = data[0]
 			nodes.add_child(ac)
+			new_node_return = ac
 		_:
 			var newgate = GATE.instance()
 			newgate.rect_position = data[0]
 			newgate.load_circuit(type)
 			nodes.add_child(newgate)
+			new_node_return = newgate
 	if !circuitdata["circuits"].has(type):
 		circuitdata["circuits"][type] = []
 	circuitdata["circuits"][type].push_back(data)
+
+	# return newly added node!!
+	return new_node_return
 
 func add_freepin_node(a):
 	var freepin = FREEPIN.instance()
@@ -120,6 +128,7 @@ func add_freepin_node(a):
 #	pin.node_token = a[0] # terminating pin node also has a token field...
 
 	nodes.add_child(freepin)
+	return pin
 func add_wire_based_node(type, a):
 	var newwire = WIRE.instance()
 	var orig_pin = get_pin_from_token(a[1][0], a[1][1])
@@ -168,6 +177,7 @@ func add_wire_based_node(type, a):
 	register_token(newwire, a[0])
 
 	wires.add_child(newwire)
+	return newwire
 
 func unload_circuit():
 	circuitdata = {
@@ -253,7 +263,6 @@ func export_database():
 	pass
 func import_database():
 	pass
-
 func enumerate_database():
 
 	# clear previous buttons
@@ -274,8 +283,6 @@ func enumerate_database():
 		btn.text = circuit_name
 
 		save_slot_list.add_child(btn)
-
-		# continue...
 
 ###
 
@@ -305,7 +312,7 @@ func _draw():
 func _ready():
 	logic.main = self
 	enumerate_database()
-#	load_circuit(1)
+	load_circuit(0)
 	tooltip("")
 
 func tooltip(txt):
@@ -313,9 +320,24 @@ func tooltip(txt):
 
 ###
 
+# for UI workaround purposes...
+func click_the_left_mouse_button():
+	var evt = InputEventMouseButton.new()
+	evt.button_index = BUTTON_LEFT
+	evt.position = get_viewport().get_mouse_position()
+	evt.pressed = true
+	get_tree().input_event(evt)
+	evt.pressed = false
+	get_tree().input_event(evt)
+
+var buildmode_types_singlepin = [
+	-999
+]
+
 var buildmode_circuit_type = null
 var buildmode_stage = null
 var buildmode_last_pin = null
+var buildmode_last_emptyspace_position = null
 func buildmode_start(type):
 	buildmode_circuit_type = type
 	buildmode_stage = 0
@@ -325,23 +347,62 @@ func buildmode_terminate():
 	buildmode_circuit_type = null
 	buildmode_stage = null
 	buildmode_last_pin = null
+	buildmode_last_emptyspace_position = null
 	tooltip("")
 func buildmode_push_stage(pin):
 	match buildmode_stage:
 		0:
-			tooltip("Select destination pin")
-			buildmode_last_pin = pin
-			buildmode_stage += 1
-		1:
-			if buildmode_last_pin.pin_neighbors.has(pin):
-				tooltip("You can't overlap wires!")
+			if buildmode_types_singlepin.has(buildmode_circuit_type):
+				match buildmode_circuit_type:
+					-999:
+						if pin != null: # existing destination pin
+							tooltip("You can't overlap pins!")
+						else:
+							add_circuit_node(-999, [
+								generate_new_token(),
+								local_event_drag_corrected,
+								0
+							])
 			else:
-				add_circuit_node(-998, [
-						generate_new_token(),
-						[buildmode_last_pin.get_parent().get_parent().node_token, 0],
-						[pin.get_parent().get_parent().node_token, 0]
-					])
-				buildmode_terminate()
+				tooltip("Select destination pin")
+				buildmode_last_pin = pin
+				if pin == null:
+					buildmode_last_emptyspace_position = local_event_drag_corrected
+				buildmode_stage += 1
+		1:
+			match buildmode_circuit_type:
+				-998:
+					buildmode_last_pin = buildmode_add_wire(pin)
+
+func buildmode_add_wire(pin):
+	if buildmode_last_pin == null: # no existing starting pin? create a new one!
+		buildmode_last_pin = add_circuit_node(-999, [
+			generate_new_token(),
+			buildmode_last_emptyspace_position,
+			0
+		])
+
+	if pin != null: # existing destination pin
+		if buildmode_last_pin.pin_neighbors.has(pin):
+			tooltip("You can't overlap wires!")
+			return buildmode_last_pin
+	else: # new destination pin!
+		pin = add_circuit_node(-999, [
+			generate_new_token(),
+			local_event_drag_corrected,
+			0
+		])
+
+	# finalize: add wire between pins!
+	add_circuit_node(-998, [
+		generate_new_token(),
+		[buildmode_last_pin.get_parent().get_parent().node_token, 0],
+		[pin.get_parent().get_parent().node_token, 0]
+	])
+
+	# return the last destination pin to become the new starting pin!
+	return pin
+
 func buildmode_remove_node(node, head = true):
 	if !node.can_interact:
 		tooltip("Can not delete slave node!")
@@ -387,6 +448,8 @@ var orig_camera_point = null
 func _input(event):
 	# reset node selection
 	if node_selection != null && !node_selection.focused && !node_selection.soft_focus:
+#		if buildmode_stage != 1:
+		print("unselecting " + str(node_selection) + " (no focus anymore)")
 		node_selection = null
 
 	# update input flags
@@ -441,15 +504,22 @@ func _input(event):
 
 
 	if buildmode_stage != null:
-		if Input.is_action_just_released("mouse_right"):
+		if Input.is_action_just_released("mouse_right"): # canel!!
 			buildmode_terminate()
 		if buildmode_circuit_type == null: # deleting!!
 			if Input.is_action_just_released("mouse_left") && node_selection != null:
 				buildmode_remove_node(node_selection)
 		else:
-			if Input.is_action_just_released("mouse_left"): # || (Input.is_action_pressed("mouse_left") && local_event_drag_start != local_event_drag_corrected):
-				if node_selection != null && node_selection != buildmode_last_pin && node_selection.node_type == -999:
+			if Input.is_action_pressed("mouse_left") && buildmode_stage == 0 && click_origin.left != mouse_position:
+				if !buildmode_types_singlepin.has(buildmode_circuit_type): # only do for "draggable" nodes
 					buildmode_push_stage(node_selection)
+					click_the_left_mouse_button()
+			if Input.is_action_just_released("mouse_left"):
+				if node_selection != null: # existing pin!
+					if node_selection != buildmode_last_pin && node_selection.node_type == -999:
+						buildmode_push_stage(node_selection)
+				else:
+					buildmode_push_stage(node_selection) # new pin!
 
 	# camera scrolling and dragging
 	if event is InputEventMouseButton:
@@ -482,7 +552,7 @@ func _input(event):
 				camera.position.y = clamp(camera.position.y, -max_camera_pan, max_camera_pan)
 
 		# keep cursor centered on focused pin IF not doing other actions e.g. dragging
-		if node_selection != null && node_selection.node_type == -999 && !Input.is_action_pressed("mouse_left"):
+		if node_selection != null && node_selection.node_type == -999: # && !Input.is_action_pressed("mouse_left"):
 			local_event_drag_corrected = node_selection.owner_node.position
 	camera.zoom.x = clamp(camera.zoom.x, 0.5625, 9.98872123152)
 	camera.zoom.y = clamp(camera.zoom.y, 0.5625, 9.98872123152)
@@ -504,17 +574,25 @@ func _input(event):
 		cursor2.position = local_event_drag_corrected
 		cursor3.position = local_event_drag_corrected
 
-		if local_event_drag_start != null:
+		if local_event_drag_start != null && !buildmode_types_singlepin.has(buildmode_circuit_type):
 			cursor.position = local_event_drag_start
 			cursor3.position = local_event_drag_start
-		if buildmode_last_pin != null:
-			cursor.position = buildmode_last_pin.owner_node.position
-			cursor3.position = buildmode_last_pin.owner_node.position
+		if buildmode_last_pin != null || buildmode_last_emptyspace_position != null:
+			if buildmode_last_pin != null:
+				cursor.position = buildmode_last_pin.owner_node.position
+				cursor3.position = buildmode_last_pin.owner_node.position
+				cursorline.points = [
+					buildmode_last_pin.owner_node.position,
+					local_event_drag_corrected
+				]
+			else:
+				cursor.position = buildmode_last_emptyspace_position
+				cursor3.position = buildmode_last_emptyspace_position
+				cursorline.points = [
+					buildmode_last_emptyspace_position,
+					local_event_drag_corrected
+				]
 			cursorline.visible = true
-			cursorline.points = [
-				buildmode_last_pin.owner_node.position,
-				local_event_drag_corrected
-			]
 		if node_selection == null:
 			cursor.visible = false
 
@@ -571,6 +649,15 @@ func _on_btn_load_pressed():
 	reset_btn_saveloaddel(1)
 	if $HUD/top_left/btn_load.pressed:
 		saveloaddel_mode = 1
+		save_slot_list.visible = true
+	else:
+		saveloaddel_mode = -1
+		save_slot_list.visible = false
+
+func _on_btn_delete_pressed(): # todo!
+	reset_btn_saveloaddel(2)
+	if $HUD/top_left/btn_delete.pressed:
+		saveloaddel_mode = 2
 		save_slot_list.visible = true
 	else:
 		saveloaddel_mode = -1

@@ -101,6 +101,9 @@ func _process(delta):
 		if can_interact && !logic.main.selection_mode & 1:
 			$L/Label.visible = true
 
+#	$L/Label3.text = ""
+	$L/Label3.text = str(focused) + " " + str(soft_focus)
+
 	$Pin.color = color
 
 var orig_position = Vector2()

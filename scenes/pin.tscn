@@ -45,14 +45,11 @@ __meta__ = {
 }
 
 [node name="Label3" type="Label" parent="L"]
-visible = false
-margin_left = 82.0751
-margin_top = 51.5469
-margin_right = 140.075
-margin_bottom = 121.547
-custom_fonts/font = ExtResource( 2 )
+margin_left = 45.8679
+margin_top = 20.3585
+margin_right = 103.868
+margin_bottom = 90.3586
 text = "0"
-align = 1
 __meta__ = {
 "_edit_use_anchors_": false
 }
