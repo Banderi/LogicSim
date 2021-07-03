@@ -325,6 +325,8 @@ func _process(delta):
 			get_tree().call_group("sources", "maintain_tension")
 			get_tree().call_group("wires", "update_conductance")
 
+			get_tree().call_group("graph", "refresh_probes", false)
+
 		get_tree().call_group("graph", "refresh_probes")
 		get_tree().call_group("pins", "cleanup_tensions")
 
@@ -337,9 +339,11 @@ func _draw():
 
 func _ready():
 	logic.main = self
+	tooltip("")
+
+	# temp: load circuit 0 on startup
 	reload_database()
 	load_circuit(0)
-	tooltip("")
 
 func tooltip(txt):
 	$HUD/bottom_right/tooltip.text = txt
@@ -357,7 +361,9 @@ func click_the_left_mouse_button():
 	get_tree().input_event(evt)
 
 var buildmode_types_singlepin = [
-	-999
+	-999, # free pin
+	-200, # DC source
+	-201  # AC source
 ]
 
 var buildmode_circuit_type = null
@@ -651,6 +657,22 @@ func _on_btn_zoomy_less_pressed():
 
 func _on_btn_zoomy_more_pressed():
 	logic.probe.zoom_ver(1, self)
+
+func _on_btn_iter_less_pressed():
+	var i = logic.available_iteration_times_temp.find(logic.iteration_times)
+	i -= 1
+	if i < 0:
+		i = 0
+	logic.iteration_times = logic.available_iteration_times_temp[i]
+	$HUD/graph/Control/iterations.text = "iterat. : " + str(logic.iteration_times)
+
+func _on_btn_iter_more_pressed():
+	var i = logic.available_iteration_times_temp.find(logic.iteration_times)
+	i += 1
+	if i > logic.available_iteration_times_temp.size() - 1:
+		i = logic.available_iteration_times_temp.size() - 1
+	logic.iteration_times = logic.available_iteration_times_temp[i]
+	$HUD/graph/Control/iterations.text = "iterat. : " + str(logic.iteration_times)
 
 ###
 

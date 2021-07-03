@@ -239,19 +239,31 @@ margin_right = 204.0
 margin_bottom = 76.0
 text = "step"
 
-[node name="btn_page_left" parent="HUD/graph/Control" instance=ExtResource( 2 )]
+[node name="btn_iter_less" parent="HUD/graph/Control" instance=ExtResource( 2 )]
 margin_left = 1.0
 margin_top = 99.0
 margin_right = 28.0
 margin_bottom = 126.0
 text = "<"
 
-[node name="btn_page_right" parent="HUD/graph/Control" instance=ExtResource( 2 )]
+[node name="btn_iter_more" parent="HUD/graph/Control" instance=ExtResource( 2 )]
 margin_left = 191.0
 margin_top = 99.0
 margin_right = 218.0
 margin_bottom = 126.0
 text = ">"
+
+[node name="iterations" type="Label" parent="HUD/graph/Control"]
+margin_left = 51.0
+margin_top = 99.0
+margin_right = 171.0
+margin_bottom = 129.0
+custom_fonts/font = ExtResource( 6 )
+text = "iterat. : 4"
+valign = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
 
 [node name="scale_x" type="Label" parent="HUD/graph/Control"]
 margin_left = 321.0
@@ -517,6 +529,8 @@ current = true
 [connection signal="pressed" from="HUD/graph/Control/btn_stop" to="." method="_on_btn_stop_pressed"]
 [connection signal="pressed" from="HUD/graph/Control/btn_go" to="." method="_on_btn_go_pressed"]
 [connection signal="pressed" from="HUD/graph/Control/btn_step" to="." method="_on_btn_step_pressed"]
+[connection signal="pressed" from="HUD/graph/Control/btn_iter_less" to="." method="_on_btn_iter_less_pressed"]
+[connection signal="pressed" from="HUD/graph/Control/btn_iter_more" to="." method="_on_btn_iter_more_pressed"]
 [connection signal="pressed" from="HUD/graph/Control/btn_zoomx_less" to="." method="_on_btn_zoomx_less_pressed"]
 [connection signal="pressed" from="HUD/graph/Control/btn_zoomx_more" to="." method="_on_btn_zoomx_more_pressed"]
 [connection signal="pressed" from="HUD/graph/Control/btn_zoomy_less" to="." method="_on_btn_zoomy_less_pressed"]

@@ -7,6 +7,20 @@ var simulation_speed = 0.5
 var iteration_times = 4
 var simulation_go = -1
 
+# temporary solution...
+var available_iteration_times_temp = [
+	1,
+	2,
+	4,
+	10,
+	20,
+	40,
+	60,
+	100,
+	200,
+	400
+]
+
 var colors_tens = [
 	Color(0,0,1,1),				# low tension
 	Color(0.36,0.36,0.36,1),	# neutral

@@ -20,10 +20,10 @@ func attach(p, t):
 	data = []
 	probing = p
 	probing_type = t
-	refresh_probes(false)
+	refresh_probes()
 
 var label_n = 9
-func read(v, nam, u, col, absol = false, rectify = 1.0):
+func read(v, TICK, nam, u, col, absol = false, rectify = 1.0):
 	# get set from data by name
 	var set = {
 		"name":nam,
@@ -32,6 +32,7 @@ func read(v, nam, u, col, absol = false, rectify = 1.0):
 		"absolute":absol,
 		"rectify":rectify,
 		"points":[],
+		"tick_cache":[],
 	}
 	var found = false
 	for s in data:
@@ -42,6 +43,20 @@ func read(v, nam, u, col, absol = false, rectify = 1.0):
 			break
 	if !found:
 		data.append(set)
+
+	# add value to cache FIRST
+	var cache = set["tick_cache"]
+	cache.push_front(v)
+
+	# if not a TICK update, discard point - just add to the caches
+	if !TICK:
+		return
+
+	# else, retrieve the final value from the cache!
+	for cv in cache:
+		if abs(cv) > abs(v):
+			v = cv
+	cache.clear()
 
 	var points = set["points"]
 	var l = $Labels.get_child(label_n)
@@ -169,12 +184,12 @@ func refresh_probes(tick = true):
 		$L/Label.append_bbcode("Probing: " + str(probing))
 		match probing_type:
 			0:
-				read(probing.tension, "Tension", "Volts", Color(1, 0, 0))
+				read(probing.tension, tick, "Tension", "Volts", Color(1, 0, 0))
 			1:
-				read(probing.current, "Current", "Amps", Color(1, 1, 0), true, 500.0)
-				read(probing.voltage, "Voltage", "Volts", Color(1, 0, 0))
-				read(probing.resistance, "Resistance", "Ohms", Color(1, 0.5, 0))
-				read(probing.conductance, "Conductance", "Siemens", Color(0, 1, 1))
+				read(probing.current, tick, "Current", "Amps", Color(1, 1, 0), true, 500.0)
+				read(probing.voltage, tick, "Voltage", "Volts", Color(1, 0, 0))
+				read(probing.resistance, tick, "Resistance", "Ohms", Color(1, 0.5, 0))
+				read(probing.conductance, tick, "Conductance", "Siemens", Color(0, 1, 1))
 
 		$L/Label.append_bbcode("\n")
 		for set in data:
