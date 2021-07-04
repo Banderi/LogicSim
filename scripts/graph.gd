@@ -54,8 +54,11 @@ func read(v, TICK, nam, u, col, absol = false, rectify = 1.0):
 
 	# else, retrieve the final value from the cache!
 	for cv in cache:
-		if abs(cv) > abs(v):
-			v = cv
+		if str(v) != "inf" && str(v) != "-inf" && str(cv) != "inf" && str(cv) != "-inf":
+			if abs(cv) > abs(v):
+				v = cv
+		else:
+			pass
 	cache.clear()
 
 	var points = set["points"]
@@ -186,7 +189,7 @@ func refresh_probes(tick = true):
 			0:
 				read(probing.tension, tick, "Tension", "Volts", Color(1, 0, 0))
 			1:
-				read(probing.current, tick, "Current", "Amps", Color(1, 1, 0), true, 500.0)
+				read(probing.current, tick, "Current", "Amps", Color(1, 1, 0), true) # 500.0
 				read(probing.voltage, tick, "Voltage", "Volts", Color(1, 0, 0))
 				read(probing.resistance, tick, "Resistance", "Ohms", Color(1, 0.5, 0))
 				read(probing.conductance, tick, "Conductance", "Siemens", Color(0, 1, 1))

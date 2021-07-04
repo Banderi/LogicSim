@@ -96,10 +96,13 @@ func _process(delta):
 	else:
 		color = logic.colors_tens[3]
 	$L/Label.visible = false
+	if !is_source:
+		$L/Label2.visible = false
 	if focused:
 		color = logic.colors_tens[4]
 		if can_interact && !logic.main.selection_mode & 1:
 			$L/Label.visible = true
+		$L/Label2.visible = true
 
 #	$L/Label3.text = ""
 	$L/Label3.text = str(focused) + " " + str(soft_focus)
