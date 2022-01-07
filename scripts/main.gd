@@ -179,6 +179,22 @@ func add_wire_based_node(type, a):
 	wires.add_child(newwire)
 	return newwire
 
+signal confirmation_dialog
+var confirmation_dialog_confirmed = false
+func ask_for_confirmation(title, body = "", ok = "OK", cancel = "Cancel"):
+	confirmation_dialog_confirmed = false
+	$HUD/fullscreen/ConfirmationDialog.window_title = title
+	$HUD/fullscreen/ConfirmationDialog.dialog_text = body
+	$HUD/fullscreen/ConfirmationDialog.get_ok().text = ok
+	$HUD/fullscreen/ConfirmationDialog.get_cancel().text = cancel
+	$HUD/fullscreen/ConfirmationDialog.popup()
+	pass
+func _on_ConfirmationDialog_confirmed():
+	confirmation_dialog_confirmed = true
+	emit_signal("confirmation_dialog")
+func _on_ConfirmationDialog_custom_action(action):
+	pass # Replace with function body.
+
 func unload_circuit():
 	circuitdata = {
 		"name": "",
@@ -187,6 +203,7 @@ func unload_circuit():
 		"outputs": [],
 		"circuits": {}
 	}
+	$HUD/top_left/line_name.text = circuitdata["name"]
 	for n in inputs.get_children():
 		n.free()
 	for n in outputs.get_children():
@@ -198,11 +215,27 @@ func unload_circuit():
 	node_token_list = {}
 	logic.probe.attach(null, -1)
 func save_circuit(n):
+	if n == null:
+		n = 0
+		while logic.circuits.has(n):
+			n += 1
 	if n < 0:
 		return # lower than 0 are BUILT IN circuits
+
+	if logic.circuits.has(n) && logic.circuits[n].name != circuitdata.name:
+		ask_for_confirmation("Existing circuit", "Overwrite the selected circuit?")
+		yield(self, "confirmation_dialog")
+		if !confirmation_dialog_confirmed:
+			return
+
 	print("saving circuit " + str(n))
 	logic.circuits[n] = circuitdata
+	save_database() # on circuit save, serialize as well
+#	reload_database()
 func load_circuit(n):
+	if n == null:
+		unload_circuit()
+		return # todo
 	if n < 0:
 		return # lower than 0 are BUILT IN circuits
 	print("loading circuit " + str(n))
@@ -213,6 +246,7 @@ func load_circuit(n):
 
 	circuitdata["name"] = to_load_from["name"]
 	circuitdata["color"] = to_load_from["color"]
+	$HUD/top_left/line_name.text = circuitdata["name"]
 
 	# load data for circuit #n
 	for i in to_load_from["inputs"]: # populate INPUTS
@@ -223,20 +257,35 @@ func load_circuit(n):
 		var list_of_such = to_load_from["circuits"][id]
 		for data in list_of_such:
 			add_circuit_node(id, data)
+func delete_circuit(n):
+	if !logic.circuits.has(n):
+		return # invalid slot!
+	if n < 0:
+		return # lower than 0 are BUILT IN circuits
+
+	ask_for_confirmation("Delete confirmation", "Delete the selected circuit?")
+	yield(self, "confirmation_dialog")
+	if !confirmation_dialog_confirmed:
+		return
+
+	print("deleting circuit " + str(n))
+	logic.circuits.erase(n)
+	save_database()
+	reload_database()
 
 var saveloaddel_mode = -1
 func saveloaddel_button(n):
 	reset_btn_saveloaddel(-1)
 	match saveloaddel_mode:
-		0:
+		0: # save button
 			save_circuit(n)
-			save_database() # on circuit save, serialize as well
 			return
-		1:
+		1: # load button
 			load_circuit(n)
 			return
-		2:
-			pass # todo: delete circuit!
+		2: # delete button
+			delete_circuit(n)
+			return
 		_:
 			return
 
@@ -286,29 +335,33 @@ func export_database():
 func import_database():
 	pass
 
+func add_circuit_button_to_list(c):
+	var circuit_name = "+"
+	if c != null:
+		circuit_name = logic.circuits[c]["name"]
+
+	# add circuit to slot list
+	var btn = LIST_BUTTON.instance()
+	btn.rect_min_size.y = 30
+	btn.connect("button_down", self, "saveloaddel_button", [c])
+	btn.text = circuit_name
+
+	save_slot_list.add_child(btn)
+
 func reload_database():
 
 	# clear previous buttons
 	for btn in save_slot_list.get_children():
-		btn.free()
+		btn.queue_free()
 
 	# reload database file
 	logic.circuits = loadfromfile("user://circuits.dat")
 
 	for c in logic.circuits:
+		add_circuit_button_to_list(c)
 
-
-		var circuit_name = logic.circuits[c]["name"]
-
-
-
-		# add circuit to slot list
-		var btn = LIST_BUTTON.instance()
-		btn.rect_min_size.y = 30
-		btn.connect("button_down", self, "saveloaddel_button", [c])
-		btn.text = circuit_name
-
-		save_slot_list.add_child(btn)
+	# for the "new circuit" button
+	add_circuit_button_to_list(null)
 
 ###
 
@@ -467,6 +520,7 @@ func buildmode_remove_node(node, head = true):
 var node_selection = null
 var local_event_drag_start = null
 var local_event_drag_corrected = Vector2(0,0)
+var camera_pos_mouse_diff = Vector2(0,0)
 var mouse_position = Vector2(0,0)
 var drag_button = 0
 var selection_mode = 0
@@ -555,13 +609,18 @@ func _input(event):
 
 	# camera scrolling and dragging
 	if event is InputEventMouseButton:
+		var zoom_step = 0.86
+		var pan_diff_coeff = 1.0 - zoom_step
 		if event.button_index == BUTTON_WHEEL_UP:
-			camera.zoom *= 0.75
+			camera.zoom *= zoom_step
+			camera.position -= camera_pos_mouse_diff * pan_diff_coeff
 		if event.button_index == BUTTON_WHEEL_DOWN:
-			camera.zoom *= 1.0 / 0.75
+			camera.zoom *= 1.0 / zoom_step
+			camera.position += camera_pos_mouse_diff * pan_diff_coeff
 	if event is InputEventMouseMotion:
 		mouse_position = event.position
 		local_event_drag_corrected = get_global_mouse_position() # update cursor position pointer
+		camera_pos_mouse_diff = camera.position - local_event_drag_corrected
 
 		if selection_mode & 2: # snap to grid!
 			local_event_drag_corrected.x = round(local_event_drag_corrected.x / 50.0) * 50.0
@@ -633,7 +692,7 @@ func _input(event):
 	$HUD/bottom_left/keys.text += "\n" + str(node_selection) # + " " + str(get_node_pin_id(node_selection))
 	$HUD/bottom_left/keys.text += "\n" + str(drag_button) + " " + str(selection_mode)
 	$HUD/bottom_left/keys.text += "\n" + str(local_event_drag_start) + " " + str(local_event_drag_corrected)
-	$HUD/bottom_left/keys.text += "\n" + str(camera.position)
+	$HUD/bottom_left/keys.text += "\n" + str(camera.position) + " " + str(camera_pos_mouse_diff)
 	$HUD/bottom_left/keys.text += "\n" + str(camera.zoom)
 	$HUD/bottom_left/keys.text += "\n" + str(cursor.position)
 
@@ -681,11 +740,28 @@ func reset_btn_saveloaddel(n):
 		$HUD/top_left/btn_save.pressed = false
 	if n != 1:
 		$HUD/top_left/btn_load.pressed = false
+	if n != 2:
+		$HUD/top_left/btn_delete.pressed = false
 	if n == -1:
 		save_slot_list.visible = false
 
+func _on_btn_new_pressed():
+	reset_btn_saveloaddel(3)
+	save_slot_list.visible = false
+	unload_circuit()
+
+func show_empty_save_slot():
+	var ls = save_slot_list.get_child_count() - 1
+	save_slot_list.get_child(ls).visible = true
+func hide_empty_save_slot():
+	var ls = save_slot_list.get_child_count() - 1
+	save_slot_list.get_child(ls).visible = false
+
 func _on_btn_save_pressed():
+	if $HUD/top_left/btn_save.pressed:
+		reload_database()
 	reset_btn_saveloaddel(0)
+	show_empty_save_slot()
 	if $HUD/top_left/btn_save.pressed:
 		saveloaddel_mode = 0
 		save_slot_list.visible = true
@@ -694,8 +770,10 @@ func _on_btn_save_pressed():
 		save_slot_list.visible = false
 
 func _on_btn_load_pressed():
-	reload_database()
+	if $HUD/top_left/btn_load.pressed:
+		reload_database()
 	reset_btn_saveloaddel(1)
+	hide_empty_save_slot()
 	if $HUD/top_left/btn_load.pressed:
 		saveloaddel_mode = 1
 		save_slot_list.visible = true
@@ -704,7 +782,10 @@ func _on_btn_load_pressed():
 		save_slot_list.visible = false
 
 func _on_btn_delete_pressed(): # todo!
+	if $HUD/top_left/btn_delete.pressed:
+		reload_database()
 	reset_btn_saveloaddel(2)
+	hide_empty_save_slot()
 	if $HUD/top_left/btn_delete.pressed:
 		saveloaddel_mode = 2
 		save_slot_list.visible = true
@@ -730,3 +811,8 @@ func _on_wire_pressed():
 
 func _on_pin_pressed():
 	buildmode_start(-999)
+
+
+func _on_line_name_text_changed(new_text):
+	circuitdata.name = new_text
+
