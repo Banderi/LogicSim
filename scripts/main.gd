@@ -26,6 +26,10 @@ onready var cursorline = $BACK/cursorline
 
 onready var save_slot_list = $HUD/top_left/slots
 
+onready var debug_logger = $HUD/top_right/debug
+
+###
+
 var circuitdata = {
 	"name": "",
 	"color": "000000",
@@ -116,7 +120,7 @@ func add_freepin_node(a):
 	var pin = freepin.get_child(0).get_child(0)
 
 	if (a.size() > 3): # additional values
-		pin.is_source = float(a[2])
+		pin.is_source = bool(a[2])
 		pin.tension_static = float(a[3])
 		pin.tension_amplitude = float(a[4]) if a.size() > 4 else 0
 		pin.tension_speed = float(a[5]) if a.size() > 5 else 0
@@ -231,7 +235,6 @@ func save_circuit(n):
 	print("saving circuit " + str(n))
 	logic.circuits[n] = circuitdata
 	save_database() # on circuit save, serialize as well
-#	reload_database()
 func load_circuit(n):
 	if n == null:
 		unload_circuit()
@@ -257,6 +260,9 @@ func load_circuit(n):
 		var list_of_such = to_load_from["circuits"][id]
 		for data in list_of_such:
 			add_circuit_node(id, data)
+
+	logic.prefs["lastcircuit"] = n
+	save_prefs()
 func delete_circuit(n):
 	if !logic.circuits.has(n):
 		return # invalid slot!
@@ -328,6 +334,8 @@ func loadfromfile(path):
 
 func save_database():
 	savetofile("user://circuits.dat", logic.circuits)
+func save_prefs():
+	savetofile("user://prefs.dat", logic.prefs)
 
 # todo: find files in folder
 func export_database():
@@ -396,7 +404,11 @@ func _ready():
 
 	# temp: load circuit 0 on startup
 	reload_database()
-	load_circuit(0)
+	logic.prefs = loadfromfile("user://prefs.dat")
+	if logic.prefs == null:
+		logic.prefs = {}
+	elif logic.prefs.has("lastcircuit"):
+		load_circuit(logic.prefs.lastcircuit)
 
 func tooltip(txt):
 	$HUD/bottom_right/tooltip.text = txt
@@ -812,6 +824,7 @@ func _on_wire_pressed():
 func _on_pin_pressed():
 	buildmode_start(-999)
 
+###
 
 func _on_line_name_text_changed(new_text):
 	circuitdata.name = new_text

@@ -21,6 +21,7 @@ config/icon="res://icon.png"
 [autoload]
 
 logic="*res://scripts/logic.gd"
+DebugLogger="*res://scripts/debug_logger.gd"
 
 [display]
 

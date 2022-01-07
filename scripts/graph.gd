@@ -187,8 +187,13 @@ func refresh_probes(tick = true):
 		$L/Label.append_bbcode("Probing: " + str(probing))
 		match probing_type:
 			0:
+				if probing.is_source:
+					$L/Label.append_bbcode("\nTension source (" + str(probing.tension_static) + ")")
+				else:
+					$L/Label.append_bbcode("\nWire junction")
 				read(probing.tension, tick, "Tension", "Volts", Color(1, 0, 0))
 			1:
+				$L/Label.append_bbcode("\nA-B connection")
 				read(probing.current, tick, "Current", "Amps", Color(1, 1, 0), true) # 500.0
 				read(probing.voltage, tick, "Voltage", "Volts", Color(1, 0, 0))
 				read(probing.resistance, tick, "Resistance", "Ohms", Color(1, 0.5, 0))

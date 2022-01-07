@@ -147,3 +147,6 @@ var circuits = {
 		}
 	}
 }
+var prefs = {
+	"lastcircuit": 1
+}

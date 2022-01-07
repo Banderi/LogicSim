@@ -41,6 +41,12 @@ func detach():
 	dest_pin.wires_list.erase(self)
 	orig_pin.pin_neighbors.erase(dest_pin)
 	dest_pin.pin_neighbors.erase(orig_pin)
+func get_B_from_A(A):
+	var B = null
+	if A == orig_pin:
+		return dest_pin
+	else:
+		return orig_pin
 
 # from https://github.com/juddrgledhill/godot-dashed-line/blob/master/line_harness.gd
 func draw_dashed_line(from, to, color, width, dash_length = 5, gap = 2.5, antialiased = false):
@@ -67,18 +73,23 @@ func is_enabled():
 	return orig_pin.enabled && dest_pin.enabled
 
 var r_bar = 0.99
-func conduct_neighboring_tension(t, delegate_node):
-	if !is_enabled():
-		return
-
-	# determine which node to send to
-	var target_node = null
-	if delegate_node == orig_pin:
-		target_node = dest_pin
-	else:
-		target_node = orig_pin
-
-	target_node.add_tension_from_neighbor(t, conductance, delegate_node)
+func query_tension_drop(source, dest, tA, tB):
+	var voltage = tB - tA
+	return voltage
+#func conduct_neighboring_tension(t, delegate_node):
+#	if !is_enabled():
+#		DebugLogger.logme(delegate_node, "  > Wire is asleep!")
+#		return
+#
+#	# determine which node to send to
+#	var target_node = get_B_from_A(delegate_node)
+##	if delegate_node == orig_pin:
+##		target_node = dest_pin
+##	else:
+##		target_node = orig_pin
+#
+#	DebugLogger.logme(delegate_node, "  > Conducting: " + logic.proper(t, "V", true) + " to " + str(target_node))
+#	target_node.add_tension_from_neighbor(self, t, conductance, delegate_node)
 
 func update_conductance():
 	$L/Label.rect_position = (orig_pin.global_position + dest_pin.global_position) / 2
