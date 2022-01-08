@@ -14,7 +14,11 @@ func clearme(node):
 		return
 	clear()
 	last_node = node
-func logme(node, txt, color = Color(1,1,1)):
+func logchunk(txt, color):
+	debug_logger.push_color(color)
+	debug_logger.append_bbcode(str(txt))
+	debug_logger.pop()
+func logme(node, array):
 	if debug_logger == null:
 		debug_logger = logic.main.debug_logger
 
@@ -24,7 +28,16 @@ func logme(node, txt, color = Color(1,1,1)):
 		clear()
 	last_node = node
 
-	debug_logger.push_color(color)
 	debug_logger.append_bbcode("\n")
-	debug_logger.append_bbcode(str(txt))
-	debug_logger.pop()
+
+	if array is Array:
+		var r = ceil(float(array.size()) / 2.0)
+		for t in range(r):
+			var txt = array[2 * t]
+			var color = array[2 * t + 1] if array.size() > (2 * t + 1) else Color(1,1,1)
+#			var chunk = array[t]
+#			var txt = chunk[0] if chunk is Array else chunk
+#			var color = chunk[1] if (chunk is Array && chunk.size() > 0) else Color(1,1,1)
+			logchunk(txt, color)
+	else:
+		logchunk(array, Color(1,1,1))

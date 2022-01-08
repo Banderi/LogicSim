@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=2]
+[gd_scene load_steps=10 format=2]
 
 [ext_resource path="res://scenes/graph.tscn" type="PackedScene" id=1]
 [ext_resource path="res://scenes/button.tscn" type="PackedScene" id=2]
@@ -7,6 +7,10 @@
 [ext_resource path="res://scenes/circuit_list_item.tscn" type="PackedScene" id=5]
 [ext_resource path="res://fonts/slkscr_small.tres" type="DynamicFont" id=6]
 [ext_resource path="res://fonts/slkscr_small_no_outline.tres" type="DynamicFont" id=7]
+
+[sub_resource type="StyleBoxEmpty" id=1]
+
+[sub_resource type="StyleBoxEmpty" id=2]
 
 [node name="main" type="Node2D"]
 script = ExtResource( 4 )
@@ -496,7 +500,8 @@ margin_top = 40.0
 margin_right = 26.0
 margin_bottom = 860.0
 mouse_filter = 2
-text = "LOG HERE"
+text = "TEST
+[b]test[/b]"
 __meta__ = {
 "_edit_use_anchors_": false
 }
@@ -535,7 +540,6 @@ anchor_bottom = 1.0
 margin_left = -40.0
 margin_top = -40.0
 __meta__ = {
-"_edit_group_": true,
 "_edit_lock_": true,
 "_edit_use_anchors_": false
 }
@@ -557,6 +561,72 @@ valign = 2
 __meta__ = {
 "_edit_use_anchors_": false
 }
+
+[node name="options" type="ColorRect" parent="HUD/bottom_right"]
+margin_left = -140.0
+margin_top = -290.0
+margin_right = 30.0
+margin_bottom = -50.0
+color = Color( 0, 0, 0, 0.258824 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="name" type="LineEdit" parent="HUD/bottom_right/options"]
+margin_left = 10.0
+margin_top = 10.0
+margin_right = 160.0
+margin_bottom = 24.0
+custom_styles/focus = SubResource( 1 )
+custom_styles/normal = SubResource( 2 )
+custom_fonts/font = ExtResource( 7 )
+text = "test"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="VBoxContainer" type="VBoxContainer" parent="HUD/bottom_right/options"]
+margin_left = 10.0
+margin_top = 30.0
+margin_right = 160.0
+margin_bottom = 230.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="tension" type="SpinBox" parent="HUD/bottom_right/options/VBoxContainer"]
+margin_right = 150.0
+margin_bottom = 24.0
+step = 0.01
+allow_greater = true
+allow_lesser = true
+suffix = "Volts"
+
+[node name="is_source" type="CheckBox" parent="HUD/bottom_right/options/VBoxContainer"]
+margin_top = 28.0
+margin_right = 150.0
+margin_bottom = 52.0
+text = "source"
+
+[node name="resistance" type="SpinBox" parent="HUD/bottom_right/options/VBoxContainer"]
+margin_top = 56.0
+margin_right = 150.0
+margin_bottom = 80.0
+step = 0.01
+allow_greater = true
+allow_lesser = true
+suffix = "Ohms"
+
+[node name="conductance" type="SpinBox" parent="HUD/bottom_right/options/VBoxContainer"]
+visible = false
+margin_top = 84.0
+margin_right = 150.0
+margin_bottom = 108.0
+step = 0.01
+allow_greater = true
+allow_lesser = true
+suffix = "Siemens"
 
 [node name="fullscreen" type="Control" parent="HUD"]
 anchor_right = 1.0
@@ -603,5 +673,10 @@ current = true
 [connection signal="pressed" from="HUD/top_left/btn_load" to="." method="_on_btn_load_pressed"]
 [connection signal="pressed" from="HUD/top_left/btn_delete" to="." method="_on_btn_delete_pressed"]
 [connection signal="text_changed" from="HUD/top_left/line_name" to="." method="_on_line_name_text_changed"]
+[connection signal="text_changed" from="HUD/bottom_right/options/name" to="." method="_on_name_text_changed"]
+[connection signal="value_changed" from="HUD/bottom_right/options/VBoxContainer/tension" to="." method="_on_tension_value_changed"]
+[connection signal="toggled" from="HUD/bottom_right/options/VBoxContainer/is_source" to="." method="_on_is_source_toggled"]
+[connection signal="value_changed" from="HUD/bottom_right/options/VBoxContainer/resistance" to="." method="_on_resistance_value_changed"]
+[connection signal="value_changed" from="HUD/bottom_right/options/VBoxContainer/conductance" to="." method="_on_conductance_value_changed"]
 [connection signal="confirmed" from="HUD/fullscreen/ConfirmationDialog" to="." method="_on_ConfirmationDialog_confirmed"]
 [connection signal="custom_action" from="HUD/fullscreen/ConfirmationDialog" to="." method="_on_ConfirmationDialog_custom_action"]

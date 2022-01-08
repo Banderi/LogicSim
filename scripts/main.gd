@@ -28,6 +28,8 @@ onready var save_slot_list = $HUD/top_left/slots
 
 onready var debug_logger = $HUD/top_right/debug
 
+var node_options = null
+
 ###
 
 var circuitdata = {
@@ -39,6 +41,65 @@ var circuitdata = {
 }
 
 ####
+
+func add_valid_circuit_dictionary_entry(dictionary, data, i, key, default):
+	dictionary[key] = data[i] if (data.size() > i) else default
+func construct_with_default_dictionary(dictionary, data, defaults_array, starting_index_offset = 1):
+	for i in range(defaults_array.size()):
+		var entry = defaults_array[i]
+		add_valid_circuit_dictionary_entry(dictionary, data, i + starting_index_offset, entry[0], entry[1])
+
+func convert_circuit_old_data_format(type, data):
+	var dic = {}
+
+	if data[0] == null:
+		data[0] = generate_new_token()
+
+	var dictionary = { # these MUST always be present, regardless of circuit type!
+		"IDTOKEN": data[0] if data[0] != null else generate_new_token(),
+#		"position": data[1] if data[1] != null else Vector2(),
+	}
+	match type:
+		-999: # free-floating pin
+			construct_with_default_dictionary(dictionary, data, [
+				["position", Vector2()],
+				["is_source", false],
+				["tension_static", 0],
+				["tension_amplitude", 0],
+				["tension_speed", 0],
+				["tension_phase", 0],
+			])
+#				"IDTOKEN": data[0] if data[0] != null else generate_new_token(),
+#				"position": data[1],
+#				"is_source": data[2] if data.size() > 2 else false,
+#				"tension_static": pin.tension_static,
+#				"tension_amplitude": pin.tension_amplitude,
+#				"tension_speed": pin.tension_speed,
+#				"tension_phase": pin.tension_phase
+		-998: # A-B connection / wire-based node
+			construct_with_default_dictionary(dictionary, data, [
+				["conn_A", Vector2()],
+				["conn_B", Vector2()],
+				["RES", null],
+#				["reactance", 0],
+#				["impedence", 0],
+#				["capacitance", 0],
+#				["inductance", 0],
+			])
+			if dictionary.RES == null:
+				dictionary["resistance"] = 0
+				dictionary["reactance"] = 0
+				dictionary["impedence"] = 0
+			elif dictionary.RES is Array:
+				add_valid_circuit_dictionary_entry(dictionary, dictionary.RES, 0, "resistance", 0)
+				add_valid_circuit_dictionary_entry(dictionary, dictionary.RES, 1, "reactance", 0)
+				add_valid_circuit_dictionary_entry(dictionary, dictionary.RES, 2, "impedence", 0)
+			elif dictionary.RES is Dictionary:
+				for k in dictionary.RES:
+					dictionary[k] = dictionary.RES[k]
+			dictionary.erase("RES")
+			pass
+	return dictionary
 
 var node_token_list = {}
 func get_pin_from_token(token, p):
@@ -56,6 +117,8 @@ func get_pin_from_token(token, p):
 			return node.get_node("inputs").get_child(p)
 		else:
 			return node.get_node("outputs").get_child(p)
+func get_pin_from_token_pair(pair):
+	return get_pin_from_token(pair[0], pair[1])
 func generate_new_token():
 	for token in range(0, 99):
 		if !node_token_list.has(token):
@@ -87,8 +150,10 @@ func add_circuit_node(type, data): # needed for in-game circuit spawn
 	var new_node_return = null
 
 	# get new token for node
-	if data[0] == null:
-		data[0] = generate_new_token()
+	if data is Array: # OLD FORMAT
+		data = convert_circuit_old_data_format(type, data)
+	if !("IDTOKEN" in data):
+		data["IDTOKEN"] = generate_new_token()
 
 	match type:
 		-999:
@@ -115,92 +180,104 @@ func add_circuit_node(type, data): # needed for in-game circuit spawn
 
 func add_freepin_node(a):
 	var freepin = FREEPIN.instance()
-	freepin.position = a[1]
-
 	var pin = freepin.get_child(0).get_child(0)
 
-	if (a.size() > 3): # additional values
-		pin.is_source = bool(a[2])
-		pin.tension_static = float(a[3])
-		pin.tension_amplitude = float(a[4]) if a.size() > 4 else 0
-		pin.tension_speed = float(a[5]) if a.size() > 5 else 0
-		pin.tension_phase = float(a[6]) if a.size() > 6 else 0
+	# set circuit parameters
+	for key in a:
+		if key in freepin:
+			freepin.set(key, a[key])
+		if key != "position" && key in pin:
+			pin.set(key, a[key])
+#	freepin.position = a[1]
+#	if (a.size() > 3): # additional values
+#		pin.is_source = bool(a[2])
+#		pin.tension_static = float(a[3])
+#		pin.tension_amplitude = float(a[4]) if a.size() > 4 else 0
+#		pin.tension_speed = float(a[5]) if a.size() > 5 else 0
+#		pin.tension_phase = float(a[6]) if a.size() > 6 else 0
 
 	# node id info
 	freepin.node_type = -999
-	register_token(freepin, a[0])
+	register_token(freepin, a.IDTOKEN)
 #	pin.node_token = a[0] # terminating pin node also has a token field...
 
 	nodes.add_child(freepin)
 	return pin
 func add_wire_based_node(type, a):
 	var newwire = WIRE.instance()
-	var orig_pin = get_pin_from_token(a[1][0], a[1][1])
-	var dest_pin = get_pin_from_token(a[2][0], a[2][1])
+#	var orig_pin = get_pin_from_token(a[1][0], a[1][1])
+#	var dest_pin = get_pin_from_token(a[2][0], a[2][1])
+	var orig_pin = get_pin_from_token_pair(a.conn_A)
+	var dest_pin = get_pin_from_token_pair(a.conn_B)
 	newwire.attach(orig_pin, dest_pin)
 
-	var dummy_data = {
-		"resistance": 0,
-		"reactance": 0,
-		"impedance": 0
-	}
-	var data = a[3] if a.size() > 3 else dummy_data
-	if data == null:
-		data = dummy_data
-	newwire.impedance = null # reset impedance
+	# set circuit parameters
+	for key in a:
+		if key in newwire:
+			newwire.set(key, a[key])
 
-	if data is Array: # convert from old type of data format
-		if data == []:
-			data = dummy_data
-		else:
-			var ni = dummy_data
-			if data.size() > 0:
-				ni.resistance = data[0]
-			if data.size() > 1:
-				ni.reactance = data[1]
-			if data.size() > 2:
-				ni.impedance = data[2]
-			data = ni
+#	var dummy_data = {
+#		"resistance": 0,
+#		"reactance": 0,
+#		"impedance": 0
+#	}
+#	var data = a[3] if a.size() > 3 else dummy_data
+#	if data == null:
+#		data = dummy_data
+#	newwire.impedance = null # reset impedance
+#
+#	if data is Array: # convert from old type of data format
+#		if data == []:
+#			data = dummy_data
+#		else:
+#			var ni = dummy_data
+#			if data.size() > 0:
+#				ni.resistance = data[0]
+#			if data.size() > 1:
+#				ni.reactance = data[1]
+#			if data.size() > 2:
+#				ni.impedance = data[2]
+#			data = ni
 
-	# resistance
-	if "resistance" in data:
-		if str(data.resistance) == "inf":
-			newwire.resistance = "inf"
-			newwire.conductance = 0.0
-			newwire.impedance = "inf"
-		elif float(data.resistance) == 0.0:
-			newwire.resistance = 0.0
-			newwire.conductance = "inf"
-			newwire.impedance = "inf"
-		else:
-			newwire.resistance = float(data.resistance)
-			newwire.conductance = 1.0 / newwire.resistance
-
-	# reactance
-	if "reactance" in data:
-		if str(data.reactance) == "inf":
-			newwire.reactance = "inf"
-			newwire.reactance_inv = 0.0
-			newwire.impedance = "inf"
-		elif float(data.reactance) == 0.0:
-			newwire.reactance = 0.0
-			newwire.reactance_inv = "inf"
-			newwire.impedance = "inf"
-		else:
-			newwire.reactance = float(data.reactance)
-			newwire.reactance_inv = 1.0 / newwire.reactance
-
-	# impedance
-	if newwire.impedance == null:
-		newwire.impedance = sqrt(newwire.resistance * newwire.resistance + newwire.reactance * newwire.reactance)
-
-	# etc.
-	newwire.capacitance = data.capacitance if "capacitance" in data else 0.0
-	newwire.inductance = data.inductance if "inductance" in data else 0.0
+#	# resistance
+#	if "resistance" in data:
+#		if str(data.resistance) == "inf":
+#			newwire.resistance = "inf"
+#			newwire.conductance = 0.0
+#			newwire.impedance = "inf"
+#		elif float(data.resistance) == 0.0:
+#			newwire.resistance = 0.0
+#			newwire.conductance = "inf"
+#			newwire.impedance = "inf"
+#		else:
+#			newwire.resistance = float(data.resistance)
+#			newwire.conductance = 1.0 / newwire.resistance
+#
+#	# reactance
+#	if "reactance" in data:
+#		if str(data.reactance) == "inf":
+#			newwire.reactance = "inf"
+#			newwire.reactance_inv = 0.0
+#			newwire.impedance = "inf"
+#		elif float(data.reactance) == 0.0:
+#			newwire.reactance = 0.0
+#			newwire.reactance_inv = "inf"
+#			newwire.impedance = "inf"
+#		else:
+#			newwire.reactance = float(data.reactance)
+#			newwire.reactance_inv = 1.0 / newwire.reactance
+#
+#	# impedance
+#	if newwire.impedance == null:
+#		newwire.impedance = sqrt(newwire.resistance * newwire.resistance + newwire.reactance * newwire.reactance)
+#
+#	# etc.
+#	newwire.capacitance = data.capacitance if "capacitance" in data else 0.0
+#	newwire.inductance = data.inductance if "inductance" in data else 0.0
 
 	# node id info
 	newwire.node_type = type
-	register_token(newwire, a[0])
+	register_token(newwire, a.IDTOKEN)
 
 	wires.add_child(newwire)
 	return newwire
@@ -243,7 +320,7 @@ func unload_circuit():
 func save_circuit(n):
 	if n == null:
 		n = 0
-		while logic.circuits.has(n):
+		while logic.circuits.has(n): # find the first available circuit slot
 			n += 1
 	if n < 0:
 		return # lower than 0 are BUILT IN circuits
@@ -322,12 +399,12 @@ func update_node_data(token, data):
 	# traverse memory struct and look for item with correct TOKEN
 	for t in circuitdata["circuits"].keys():
 		for i in circuitdata["circuits"][t].size():
-			if circuitdata["circuits"][t][i][0] == token: # BINGO!
+			if circuitdata["circuits"][t][i].IDTOKEN == token: # BINGO!
 				if data == null:
 					circuitdata["circuits"][t].erase(circuitdata["circuits"][t][i])
 					print("Node " + str(token) + " was removed!")
 				else:
-					data.push_front(token)
+					data["IDTOKEN"] = token
 					circuitdata["circuits"][t][i] = data
 					print("Node " + str(token) + " was updated with data " + str(data))
 				return true
@@ -409,7 +486,7 @@ func _process(delta):
 			# TODO: this is a bit costly....
 			get_tree().call_group("sources", "maintain_tension")
 			get_tree().call_group("pins", "sum_up_neighbor_tensions") # propagate SOURCE voltage through wires a second time.
-			get_tree().call_group("wires", "update_conductance")
+			get_tree().call_group("wires", "update_material_properties")
 
 			get_tree().call_group("graph", "refresh_probes", false)
 
@@ -434,6 +511,21 @@ func _ready():
 		logic.prefs = {}
 	elif logic.prefs.has("lastcircuit"):
 		load_circuit(logic.prefs.lastcircuit)
+
+	# load in the value editor boxes
+	node_options = {
+		"root": $HUD/bottom_right/options,
+		"vbox": $HUD/bottom_right/options/VBoxContainer,
+		"name": $HUD/bottom_right/options/name,
+
+		"tension": $HUD/bottom_right/options/VBoxContainer/tension,
+		"is_source": $HUD/bottom_right/options/VBoxContainer/is_source,
+		"resistance": $HUD/bottom_right/options/VBoxContainer/resistance,
+#		"conductance": $HUD/bottom_right/options/VBoxContainer/conductance,
+	}
+	node_options.root.visible = false
+
+	DebugLogger.clear()
 
 func tooltip(txt):
 	$HUD/bottom_right/tooltip.text = txt
@@ -632,6 +724,9 @@ func _input(event):
 		if Input.is_action_just_pressed("mouse_left") || Input.is_action_just_pressed("mouse_right"):
 			orig_camera_point = camera.position
 
+#	# unattach probes
+#	if Input.is_action_just_released("mouse_right") && node_selection == null:
+#		logic.probe.detach()
 
 	if buildmode_stage != null:
 		if Input.is_action_just_released("mouse_right"): # canel!!
@@ -864,3 +959,56 @@ func _on_resistor_pressed():
 func _on_line_name_text_changed(new_text):
 	circuitdata.name = new_text
 
+###
+
+var update_node_settings_enabled = true
+func update_setting(setting, s):
+	if !update_node_settings_enabled:
+		return false
+	var node = logic.probe.probing
+	if node != null && setting in node:
+		node.set(setting, s)
+		node.update_node_data()
+		return true
+
+func _on_name_text_changed(new_text):
+	update_setting("nodename", new_text)
+func _on_tension_value_changed(value):
+	if node_options.is_source.pressed:
+		update_setting("tension_static", value)
+	else:
+		update_setting("tension", value)
+func _on_is_source_toggled(button_pressed):
+	update_setting("is_source", node_options.is_source.pressed)
+	_on_tension_value_changed(node_options.tension.value) # also refresh the tension box!
+
+func update_impedences(setting):
+	if !update_node_settings_enabled:
+		return false
+	var node = logic.probe.probing
+	if node != null && "resistance" in node && "conductance" in node:
+		node.refresh_impedences(setting)
+		var r_le = node_options.resistance.get_line_edit()
+#		var c_le = node_options.conductance.get_line_edit()
+
+#		update_node_settings_enabled = false
+#		if str(node.resistance) == "inf":
+#			r_le.text = "inf Ohms"
+#			node_options.resistance.editable = false
+##			node_options.resistance.value = "inf"
+#		else:
+#			node_options.resistance.editable = true
+#		if str(node.conductance) == "inf":
+#			c_le.text = "inf Siemens"
+#			node_options.conductance.editable = false
+##			node_options.conductance.value = "inf"
+#		else:
+#			node_options.conductance.editable = true
+#		update_node_settings_enabled = true
+		return true
+func _on_resistance_value_changed(value):
+	update_setting("resistance", value)
+	update_impedences("resistance")
+func _on_conductance_value_changed(value):
+	update_setting("conductance", value)
+	update_impedences("conductance")

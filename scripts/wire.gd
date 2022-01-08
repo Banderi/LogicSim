@@ -4,10 +4,35 @@ export(bool) var can_interact = true
 var node_type = -998
 var node_token = null
 
+var nodename = ""
+func get_token():
+	return node_token
+func get_name():
+	if nodename == null || nodename == "":
+		return "Node " + str(get_token())
+	else:
+		return nodename
+
 var orig_pin = null
 var dest_pin = null
 #var dest_circuit = null
 #var dest_pin_slot = 0
+
+func update_node_data():
+
+#	var arr = [
+#		position,
+#		pin.is_source,
+#		pin.tension_static,
+#		pin.tension_amplitude,
+#		pin.tension_speed,
+#		pin.tension_phase
+#	]
+#
+#	logic.main.update_node_data(node_token, arr)
+
+	# TODO!
+	pass
 
 #var speed = 40.0
 var voltage = 0.0
@@ -75,34 +100,56 @@ func is_enabled():
 var r_bar = 0.99
 func query_tension_drop(source, dest, tA, tB):
 	DebugLogger.clearme(self)
-	DebugLogger.logme(self, self)
+	DebugLogger.logme(self, [
+		get_name(), Color(1,1,1),
+		" (" + str(self) + ")", Color(0.65,0.65,0.65)
+	])
 	var voltage = tB - tA # this is when there is ZERO resistence.
+#	voltage = voltage / (resistance + 1)
 
 #	if str(conductance) != "inf":
 #		voltage = voltage * 0.01
 
-
-	DebugLogger.logme(self, "Voltage query: " + logic.proper(voltage, "V", true))
-
+	DebugLogger.logme(self, [
+		"\nVoltage query: ", Color(1,1,1),
+		logic.proper(voltage, "V", true), Color(1,0.2,0.2)
+	])
 	return voltage
 
-func update_conductance():
+func refresh_impedences(setting):
+	match setting:
+		"resistance":
+			if str(resistance) == "inf":
+				conductance = 0
+			elif resistance == 0:
+				conductance = "inf"
+			else:
+				conductance = 1.0 / resistance
+		"conductance":
+			if str(conductance) == "inf":
+				resistance = 0
+			elif conductance == 0:
+				resistance = "inf"
+			else:
+				resistance = 1.0 / conductance
+func update_material_properties():
 	$L/Label.rect_position = (orig_pin.global_position + dest_pin.global_position) / 2
 
 	# first, calculate from conductance
-	if str(conductance) == "inf":
-		resistance = 0
-	elif conductance == 0:
-		resistance = "inf"
-		$L/Label.text = "inf Ohms"
-		return
-
-	# then, from cable properties
-#	resistance = resistivity * length / area
-	if resistance == 0:
-		conductance = "inf"
-	else:
-		conductance = 1/resistance
+	refresh_impedences("resistance")
+#	if str(conductance) == "inf":
+#		resistance = 0
+#	elif conductance == 0:
+#		resistance = "inf"
+#		$L/Label.text = "inf Ohms"
+#		return
+#
+#	# then, from cable properties
+##	resistance = resistivity * length / area
+#	if resistance == 0:
+#		conductance = "inf"
+#	else:
+#		conductance = 1/resistance
 
 	# update voltage and current
 	voltage = orig_pin.tension - dest_pin.tension
@@ -201,7 +248,7 @@ func _ready():
 	redraw()
 
 	$L/Label.visible = false
-	update_conductance()
+	update_material_properties()
 
 onready var hover_element = $wire/bg/bg
 func _input(event):

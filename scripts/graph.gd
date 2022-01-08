@@ -22,6 +22,44 @@ func attach(p, t):
 	probing_type = t
 	refresh_probes()
 
+	logic.main.update_node_settings_enabled = false
+	if probing == null:
+		logic.main.node_options.root.visible = false
+	else:
+		for m in logic.main.node_options:
+			var d = logic.main.node_options[m]
+			if m in probing:
+				d.visible = true
+				if d is SpinBox:
+					var mm = probing.get(m)
+					if str(mm) == "inf":
+						d.editable = false
+					else:
+						d.editable = true
+						d.value = probing.get(m)
+				elif d is CheckBox:
+					d.pressed = probing.get(m)
+			else:
+				d.visible = false
+		logic.main.node_options.root.visible = true
+		logic.main.node_options.vbox.visible = true
+		logic.main.node_options.name.visible = true
+		logic.main.node_options.name.text = probing.get_name()
+
+#		logic.main.node_options.tension_static.editable = logic.main.node_options.is_source.pressed
+#		if "tension" in probing:
+#			logic.main.node_options.tension.visible = true
+#			logic.main.node_options.tension.value = probing.tension_static
+#		if "is_source" in probing:
+#			logic.main.node_options.is_source.visible = true
+#			logic.main.node_options.is_source.pressed = probing.is_source
+	logic.main.update_node_settings_enabled = true
+func detach():
+	probing = null
+	probing_type = null
+	logic.main.node_options.root.visible = false
+	DebugLogger.clear()
+
 var label_n = 9
 func read(v, TICK, nam, u, col, absol = false, rectify = 1.0):
 	# get set from data by name
