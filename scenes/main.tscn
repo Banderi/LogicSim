@@ -597,6 +597,7 @@ current = true
 [connection signal="pressed" from="HUD/graph/Control/ScrollContainer/ItemList/eraser" to="." method="_on_eraser_pressed"]
 [connection signal="pressed" from="HUD/graph/Control/ScrollContainer/ItemList/wire" to="." method="_on_wire_pressed"]
 [connection signal="pressed" from="HUD/graph/Control/ScrollContainer/ItemList/pin" to="." method="_on_pin_pressed"]
+[connection signal="pressed" from="HUD/graph/Control/ScrollContainer/ItemList2/resistor" to="." method="_on_resistor_pressed"]
 [connection signal="pressed" from="HUD/top_left/btn_new" to="." method="_on_btn_new_pressed"]
 [connection signal="pressed" from="HUD/top_left/btn_save" to="." method="_on_btn_save_pressed"]
 [connection signal="pressed" from="HUD/top_left/btn_load" to="." method="_on_btn_load_pressed"]

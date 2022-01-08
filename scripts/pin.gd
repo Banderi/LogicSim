@@ -35,6 +35,9 @@ func maintain_tension(): # actual source of tension!
 		while tension_phase >= 360:
 			tension_phase -= 360
 
+		# 2nd propagation loop, JUST for SOURCES
+		propagate_source_tensions_step_2()
+
 var tension_neighbors = {}
 func add_tension_from_neighbor(WIRE_NODE, t, conductance, node, source_t = 0, degree = 0):
 #	DebugLogger.logme(self, "Received tension: " + logic.proper(t, "Volts", true))
@@ -154,15 +157,21 @@ func propagate():
 			DebugLogger.logme(self, "  > Wire is asleep!")
 		else:
 			var target_pin = w.get_B_from_A(self)
-
-			var tension_A = tension
-			var tension_B = target_pin.tension
-
-			var voltage = w.query_tension_drop(self, target_pin, tension_A, tension_B)
-
+			var tA = tension
+			var tB = target_pin.tension
+			var voltage = w.query_tension_drop(self, target_pin, tA, tB)
 			DebugLogger.logme(self, "  > SENDING out " + logic.proper(voltage, "V", true) + " to " + str(target_pin))
 			target_pin.add_tension_drop_from_neighbor(self, w, -voltage)
 	DebugLogger.logme(self, "")
+func propagate_source_tensions_step_2():
+	if !enabled:
+		return
+	for w in wires_list:
+		if w.is_enabled() && str(w.conductance) == "inf":
+			var target_pin = w.get_B_from_A(self)
+			var tA = tension
+			var tB = target_pin.tension
+			target_pin.add_tension_drop_from_neighbor(self, w, (tA - tB))
 
 var tension_neighbors_lasttime = {}
 func cleanup_tensions():

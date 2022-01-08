@@ -74,22 +74,17 @@ func is_enabled():
 
 var r_bar = 0.99
 func query_tension_drop(source, dest, tA, tB):
-	var voltage = tB - tA
+	DebugLogger.clearme(self)
+	DebugLogger.logme(self, self)
+	var voltage = tB - tA # this is when there is ZERO resistence.
+
+#	if str(conductance) != "inf":
+#		voltage = voltage * 0.01
+
+
+	DebugLogger.logme(self, "Voltage query: " + logic.proper(voltage, "V", true))
+
 	return voltage
-#func conduct_neighboring_tension(t, delegate_node):
-#	if !is_enabled():
-#		DebugLogger.logme(delegate_node, "  > Wire is asleep!")
-#		return
-#
-#	# determine which node to send to
-#	var target_node = get_B_from_A(delegate_node)
-##	if delegate_node == orig_pin:
-##		target_node = dest_pin
-##	else:
-##		target_node = orig_pin
-#
-#	DebugLogger.logme(delegate_node, "  > Conducting: " + logic.proper(t, "V", true) + " to " + str(target_node))
-#	target_node.add_tension_from_neighbor(self, t, conductance, delegate_node)
 
 func update_conductance():
 	$L/Label.rect_position = (orig_pin.global_position + dest_pin.global_position) / 2

@@ -139,42 +139,64 @@ func add_wire_based_node(type, a):
 	var dest_pin = get_pin_from_token(a[2][0], a[2][1])
 	newwire.attach(orig_pin, dest_pin)
 
-	var imp = a[3] if a.size() > 3 else Vector2()
+	var dummy_data = {
+		"resistance": 0,
+		"reactance": 0,
+		"impedance": 0
+	}
+	var data = a[3] if a.size() > 3 else dummy_data
+	if data == null:
+		data = dummy_data
 	newwire.impedance = null # reset impedance
 
+	if data is Array: # convert from old type of data format
+		if data == []:
+			data = dummy_data
+		else:
+			var ni = dummy_data
+			if data.size() > 0:
+				ni.resistance = data[0]
+			if data.size() > 1:
+				ni.reactance = data[1]
+			if data.size() > 2:
+				ni.impedance = data[2]
+			data = ni
+
 	# resistance
-	if str(imp[0]) == "inf":
-		newwire.resistance = "inf"
-		newwire.conductance = 0.0
-		newwire.impedance = "inf"
-	elif float(imp[0]) == 0.0:
-		newwire.resistance = 0.0
-		newwire.conductance = "inf"
-		newwire.impedance = "inf"
-	else:
-		newwire.resistance = float(imp[0])
-		newwire.conductance = 1.0 / newwire.resistance
+	if "resistance" in data:
+		if str(data.resistance) == "inf":
+			newwire.resistance = "inf"
+			newwire.conductance = 0.0
+			newwire.impedance = "inf"
+		elif float(data.resistance) == 0.0:
+			newwire.resistance = 0.0
+			newwire.conductance = "inf"
+			newwire.impedance = "inf"
+		else:
+			newwire.resistance = float(data.resistance)
+			newwire.conductance = 1.0 / newwire.resistance
 
 	# reactance
-	if str(imp[1]) == "inf":
-		newwire.reactance = "inf"
-		newwire.reactance_inv = 0.0
-		newwire.impedance = "inf"
-	elif float(imp[1]) == 0.0:
-		newwire.reactance = 0.0
-		newwire.reactance_inv = "inf"
-		newwire.impedance = "inf"
-	else:
-		newwire.reactance = float(imp[1])
-		newwire.reactance_inv = 1.0 / newwire.reactance
+	if "reactance" in data:
+		if str(data.reactance) == "inf":
+			newwire.reactance = "inf"
+			newwire.reactance_inv = 0.0
+			newwire.impedance = "inf"
+		elif float(data.reactance) == 0.0:
+			newwire.reactance = 0.0
+			newwire.reactance_inv = "inf"
+			newwire.impedance = "inf"
+		else:
+			newwire.reactance = float(data.reactance)
+			newwire.reactance_inv = 1.0 / newwire.reactance
 
 	# impedance
 	if newwire.impedance == null:
-		newwire.impedance = sqrt(imp[0] * imp[0] + imp[1] * imp[1])
+		newwire.impedance = sqrt(newwire.resistance * newwire.resistance + newwire.reactance * newwire.reactance)
 
 	# etc.
-	newwire.capacitance = a[4] if a.size() > 4 else 0.0
-	newwire.inductance = a[5] if a.size() > 5 else 0.0
+	newwire.capacitance = data.capacitance if "capacitance" in data else 0.0
+	newwire.inductance = data.inductance if "inductance" in data else 0.0
 
 	# node id info
 	newwire.node_type = type
@@ -383,7 +405,10 @@ func _process(delta):
 		for n in range(0, logic.iteration_times):
 			get_tree().call_group("pins", "propagate")
 			get_tree().call_group("pins", "sum_up_neighbor_tensions")
+
+			# TODO: this is a bit costly....
 			get_tree().call_group("sources", "maintain_tension")
+			get_tree().call_group("pins", "sum_up_neighbor_tensions") # propagate SOURCE voltage through wires a second time.
 			get_tree().call_group("wires", "update_conductance")
 
 			get_tree().call_group("graph", "refresh_probes", false)
@@ -468,10 +493,16 @@ func buildmode_push_stage(pin):
 				buildmode_stage += 1
 		1:
 			match buildmode_circuit_type:
-				-998:
+				-998: # SIMPLE WIRE
 					buildmode_last_pin = buildmode_add_wire(pin)
+				-997: # RESISTOR
+					buildmode_last_pin = buildmode_add_wire(pin, {
+						"resistance": 500,
+						"reactance": 0,
+						"impedance": 0
+					})
 
-func buildmode_add_wire(pin):
+func buildmode_add_wire(pin, data = null):
 	if buildmode_last_pin == null: # no existing starting pin? create a new one!
 		buildmode_last_pin = add_circuit_node(-999, [
 			generate_new_token(),
@@ -494,7 +525,8 @@ func buildmode_add_wire(pin):
 	add_circuit_node(-998, [
 		generate_new_token(),
 		[buildmode_last_pin.get_parent().get_parent().node_token, 0],
-		[pin.get_parent().get_parent().node_token, 0]
+		[pin.get_parent().get_parent().node_token, 0],
+		data
 	])
 
 	# return the last destination pin to become the new starting pin!
@@ -823,6 +855,9 @@ func _on_wire_pressed():
 
 func _on_pin_pressed():
 	buildmode_start(-999)
+
+func _on_resistor_pressed():
+	buildmode_start(-997)
 
 ###
 
