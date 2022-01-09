@@ -405,7 +405,8 @@ func update_node_data(token, data):
 					print("Node " + str(token) + " was removed!")
 				else:
 					data["IDTOKEN"] = token
-					circuitdata["circuits"][t][i] = data
+					for entry in data:
+						circuitdata["circuits"][t][i][entry] = data[entry]
 					print("Node " + str(token) + " was updated with data " + str(data))
 				return true
 	print("Could not find node " + str(token))
@@ -480,13 +481,24 @@ func _process(delta):
 	if (logic.simulation_go != 0):
 
 		for n in range(0, logic.iteration_times):
-			get_tree().call_group("pins", "propagate")
-			get_tree().call_group("pins", "sum_up_neighbor_tensions")
+			get_tree().call_group("graph", "debugger_log_clear")
+
+			get_tree().call_group("sources", "maintain_tension")
+			get_tree().call_group("pins", "sum_up_instant_tensions")
+
+			get_tree().call_group("pins", "equalize_current_flows")
+#			get_tree().call_group("wires", "equalize_voltage")
+#			get_tree().call_group("pins", "propagate")
+#			get_tree().call_group("pins", "sum_up_neighbor_tensions")
 
 			# TODO: this is a bit costly....
-			get_tree().call_group("sources", "maintain_tension")
-			get_tree().call_group("pins", "sum_up_neighbor_tensions") # propagate SOURCE voltage through wires a second time.
+#			get_tree().call_group("sources", "maintain_tension") # propagate SOURCE voltage through wires a second time.
+#			get_tree().call_group("pins", "sum_up_instant_tensions")
+
 			get_tree().call_group("wires", "update_material_properties")
+#			for l in range(1):
+#				get_tree().call_group("pins", "equalize_current_flows")
+#			get_tree().call_group("wires", "update_material_properties")
 
 			get_tree().call_group("graph", "refresh_probes", false)
 
@@ -671,7 +683,7 @@ func _input(event):
 	# reset node selection
 	if node_selection != null && !node_selection.focused && !node_selection.soft_focus:
 #		if buildmode_stage != 1:
-		print("unselecting " + str(node_selection) + " (no focus anymore)")
+#		print("unselecting " + str(node_selection) + " (no focus anymore)")
 		node_selection = null
 
 	# update input flags
@@ -835,27 +847,25 @@ func _input(event):
 	$HUD/bottom_left/keys.text += "\n" + str(camera.zoom)
 	$HUD/bottom_left/keys.text += "\n" + str(cursor.position)
 
+func _on_BACK_gui_input(event):
+	if Input.is_action_just_released("mouse_right") && node_selection == null:
+		logic.probe.detach()
+
 func _on_btn_go_pressed():
 	logic.simulation_go = -1
-
 func _on_btn_stop_pressed():
 	logic.simulation_go = 0
-
 func _on_btn_step_pressed():
 	logic.simulation_go += 2
 
 func _on_btn_zoomx_less_pressed():
 	logic.probe.zoom_hor(-1, self)
-
 func _on_btn_zoomx_more_pressed():
 	logic.probe.zoom_hor(1, self)
-
 func _on_btn_zoomy_less_pressed():
 	logic.probe.zoom_ver(-1, self)
-
 func _on_btn_zoomy_more_pressed():
 	logic.probe.zoom_ver(1, self)
-
 func _on_btn_iter_less_pressed():
 	var i = logic.available_iteration_times_temp.find(logic.iteration_times)
 	i -= 1
@@ -863,7 +873,6 @@ func _on_btn_iter_less_pressed():
 		i = 0
 	logic.iteration_times = logic.available_iteration_times_temp[i]
 	$HUD/graph/Control/iterations.text = "iterat. : " + str(logic.iteration_times)
-
 func _on_btn_iter_more_pressed():
 	var i = logic.available_iteration_times_temp.find(logic.iteration_times)
 	i += 1
@@ -907,7 +916,6 @@ func _on_btn_save_pressed():
 	else:
 		saveloaddel_mode = -1
 		save_slot_list.visible = false
-
 func _on_btn_load_pressed():
 	if $HUD/top_left/btn_load.pressed:
 		reload_database()
@@ -919,7 +927,6 @@ func _on_btn_load_pressed():
 	else:
 		saveloaddel_mode = -1
 		save_slot_list.visible = false
-
 func _on_btn_delete_pressed(): # todo!
 	if $HUD/top_left/btn_delete.pressed:
 		reload_database()
@@ -936,7 +943,6 @@ func _on_btn_delete_pressed(): # todo!
 
 func _on_btn_settings_pressed():
 	pass
-
 func _on_btn_about_pressed():
 	pass
 
@@ -944,13 +950,10 @@ func _on_btn_about_pressed():
 
 func _on_eraser_pressed():
 	buildmode_start(null)
-
 func _on_wire_pressed():
 	buildmode_start(-998)
-
 func _on_pin_pressed():
 	buildmode_start(-999)
-
 func _on_resistor_pressed():
 	buildmode_start(-997)
 

@@ -26,6 +26,18 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
+[node name="CanvasLayer" type="CanvasLayer" parent="BACK"]
+layer = -9
+
+[node name="BACK" type="ColorRect" parent="BACK/CanvasLayer"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color( 0.847059, 0, 0, 0 )
+__meta__ = {
+"_edit_lock_": true,
+"_edit_use_anchors_": false
+}
+
 [node name="grid" type="Node2D" parent="BACK"]
 z_index = -999
 z_as_relative = false
@@ -615,7 +627,6 @@ margin_right = 150.0
 margin_bottom = 80.0
 step = 0.01
 allow_greater = true
-allow_lesser = true
 suffix = "Ohms"
 
 [node name="conductance" type="SpinBox" parent="HUD/bottom_right/options/VBoxContainer"]
@@ -625,7 +636,6 @@ margin_right = 150.0
 margin_bottom = 108.0
 step = 0.01
 allow_greater = true
-allow_lesser = true
 suffix = "Siemens"
 
 [node name="fullscreen" type="Control" parent="HUD"]
@@ -655,6 +665,7 @@ __meta__ = {
 position = Vector2( -260, -220 )
 current = true
 
+[connection signal="gui_input" from="BACK/CanvasLayer/BACK" to="." method="_on_BACK_gui_input"]
 [connection signal="pressed" from="HUD/graph/Control/btn_stop" to="." method="_on_btn_stop_pressed"]
 [connection signal="pressed" from="HUD/graph/Control/btn_go" to="." method="_on_btn_go_pressed"]
 [connection signal="pressed" from="HUD/graph/Control/btn_step" to="." method="_on_btn_step_pressed"]

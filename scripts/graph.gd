@@ -14,6 +14,15 @@ var data = []
 var probing = null
 var probing_type = -1
 
+func debugger_log_clear():
+	if probing == null:
+		return
+	DebugLogger.clearme(probing)
+	DebugLogger.logme(probing, [
+		probing.get_name(), Color(1,1,1),
+		" (" + str(probing) + ")", Color(0.65,0.65,0.65)
+	])
+
 func attach(p, t):
 	if probing == p:
 		return

@@ -15,24 +15,14 @@ func get_name():
 
 var orig_pin = null
 var dest_pin = null
-#var dest_circuit = null
-#var dest_pin_slot = 0
 
 func update_node_data():
-
-#	var arr = [
-#		position,
-#		pin.is_source,
-#		pin.tension_static,
-#		pin.tension_amplitude,
-#		pin.tension_speed,
-#		pin.tension_phase
-#	]
-#
-#	logic.main.update_node_data(node_token, arr)
-
-	# TODO!
-	pass
+	var data = {
+		"resistance": resistance,
+		"reactance": reactance,
+		"conductance": conductance
+	}
+	logic.main.update_node_data(node_token, data)
 
 #var speed = 40.0
 var voltage = 0.0
@@ -98,23 +88,47 @@ func is_enabled():
 	return orig_pin.enabled && dest_pin.enabled
 
 var r_bar = 0.99
-func query_tension_drop(source, dest, tA, tB):
-	DebugLogger.clearme(self)
-	DebugLogger.logme(self, [
-		get_name(), Color(1,1,1),
-		" (" + str(self) + ")", Color(0.65,0.65,0.65)
-	])
-	var voltage = tB - tA # this is when there is ZERO resistence.
-#	voltage = voltage / (resistance + 1)
+func query_tension_drop_coeff(source, dest, tA, tB):
+#	DebugLogger.clearme(self)
+#	DebugLogger.logme(self, [
+#		get_name(), Color(1,1,1),
+#		" (" + str(self) + ")", Color(0.65,0.65,0.65)
+#	])
+#	var v = tB - tA # this is when there is ZERO resistence.
+#	if resistance == 500:
+#		return 1.06
+#	if resistance > 0:
+#		voltage = voltage / (resistance)
+#	else:
+#		voltage = voltage
 
 #	if str(conductance) != "inf":
 #		voltage = voltage * 0.01
 
-	DebugLogger.logme(self, [
-		"\nVoltage query: ", Color(1,1,1),
-		logic.proper(voltage, "V", true), Color(1,0.2,0.2)
-	])
-	return voltage
+#	DebugLogger.logme(self, [
+#		"\nVoltage query: ", Color(1,1,1),
+#		logic.proper(v, "V", true), Color(1,0.2,0.2)
+#	])
+	return 1.0
+func equalize_voltage():
+	if !orig_pin.enabled || !dest_pin.enabled:
+		return
+	if str(resistance) != "0":
+		return
+	DebugLogger.logme(self, "\nEqualizing tensions...")
+	var v = orig_pin.tension - dest_pin.tension
+
+	var forward_coeff = query_tension_drop_coeff(null, null, orig_pin.tension, dest_pin.tension)
+	var backward_coeff = (-2 + forward_coeff)
+
+#	if resistance == 500:
+#		forward_coeff = 0.7
+#		backward_coeff = -1.3
+
+	if !dest_pin.is_source:
+		dest_pin.add_tension_drop_from_neighbor(orig_pin, self, forward_coeff * v)
+	if !orig_pin.is_source:
+		orig_pin.add_tension_drop_from_neighbor(dest_pin, self, backward_coeff * v)
 
 func refresh_impedences(setting):
 	match setting:
@@ -133,23 +147,11 @@ func refresh_impedences(setting):
 			else:
 				resistance = 1.0 / conductance
 func update_material_properties():
-	$L/Label.rect_position = (orig_pin.global_position + dest_pin.global_position) / 2
+	$L/Label.rect_position = (orig_pin.global_position + dest_pin.global_position) / 2 - Vector2(300, 0)
+#	$L/Label.rect_position = Vector2()
 
 	# first, calculate from conductance
 	refresh_impedences("resistance")
-#	if str(conductance) == "inf":
-#		resistance = 0
-#	elif conductance == 0:
-#		resistance = "inf"
-#		$L/Label.text = "inf Ohms"
-#		return
-#
-#	# then, from cable properties
-##	resistance = resistivity * length / area
-#	if resistance == 0:
-#		conductance = "inf"
-#	else:
-#		conductance = 1/resistance
 
 	# update voltage and current
 	voltage = orig_pin.tension - dest_pin.tension
@@ -172,10 +174,22 @@ func update_material_properties():
 		current = voltage * cond_coeff
 
 #	$L/Label.text = str(stepify(abs(current),0.001)) + "A"
-	if str(resistance) == "inf":
-		$L/Label.text = "inf Ohms"
+	if focused:
+		$L/Label.visible = true
+		$L/Label.modulate.a = 1.0
+		if str(resistance) == "inf":
+			$L/Label.text = "inf Ohms"
+		else:
+			$L/Label.text = str(stepify(abs(resistance),0.001)) + " Ohms"
 	else:
-		$L/Label.text = str(stepify(abs(resistance),0.001)) + " Ohms"
+		if str(resistance) == "0":
+			$L/Label.visible = false
+		else:
+			$L/Label.modulate.a = 0.5
+			if str(resistance) == "inf":
+				$L/Label.text = "inf"
+			else:
+				$L/Label.text = logic.proper(resistance, "")
 
 var phase = 0
 var dot_size = 6
@@ -247,7 +261,13 @@ func _ready():
 
 	redraw()
 
-	$L/Label.visible = false
+	$L/Label.modulate.a = 0.5
+	if str(resistance) == "0":
+		$L/Label.visible = false
+	if str(resistance) == "inf":
+		$L/Label.text = "inf"
+	else:
+		$L/Label.text = logic.proper(resistance, "")
 	update_material_properties()
 
 onready var hover_element = $wire/bg/bg
@@ -271,8 +291,6 @@ var focused = false
 var soft_focus = false
 func _on_bg_mouse_entered():
 	focused = true
-	$L/Label.visible = true
 
 func _on_bg_mouse_exited():
 	focused = false
-	$L/Label.visible = false
