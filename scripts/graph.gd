@@ -128,7 +128,7 @@ func read(v, TICK, nam, u, col, absol = false, rectify = 1.0):
 		text_p = v * rectify
 		if absol:
 			text_p = abs(text_p)
-		l.text = str(stepify((text_p / rectify), 0.01))
+		l.text = str(stepify((text_p / rectify), 0.0001))
 		points.push_front(v * rectify)
 
 	while points.size() > max_x_reach:
@@ -239,6 +239,7 @@ func refresh_probes(tick = true):
 				else:
 					$L/Label.append_bbcode("\nWire junction")
 				read(probing.tension, tick, "Tension", "Volts", Color(1, 0, 0))
+				read(probing.charge_stored, tick, "Charge", "Coulombs", Color(1, 1, 0))
 			1:
 				$L/Label.append_bbcode("\nA-B connection")
 				read(probing.current, tick, "Current", "Amps", Color(1, 1, 0), true) # 500.0
@@ -251,7 +252,7 @@ func refresh_probes(tick = true):
 			$L/Label.push_color(set["color"])
 			$L/Label.append_bbcode("\n" + set["name"] + ": ")
 			$L/Label.pop()
-			$L/Label.append_bbcode(logic.proper(set["points"][0], set["unit"], true, true, set["rectify"], 0.01, set["absolute"]))
+			$L/Label.append_bbcode(logic.proper(set["points"][0], set["unit"], true, true, set["rectify"], 0.0001, set["absolute"]))
 	else:
 		$L/Label.append_bbcode("Probing: (nothing)")
 

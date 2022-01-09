@@ -483,10 +483,15 @@ func _process(delta):
 		for n in range(0, logic.iteration_times):
 			get_tree().call_group("graph", "debugger_log_clear")
 
-			get_tree().call_group("sources", "maintain_tension")
-			get_tree().call_group("pins", "sum_up_instant_tensions")
+			get_tree().call_group("pins", "sum_up_charge_flows", delta)
 
-			get_tree().call_group("pins", "equalize_current_flows")
+			get_tree().call_group("sources", "maintain_tension") # TO REWRITE!!!!! <---- calculate ISLANDS of WIRES!!!
+#			get_tree().call_group("pins", "sum_up_instant_tensions")
+#			get_tree().call_group("wires", "equalize_instant_tensions")
+
+
+			get_tree().call_group("pins", "equalize_current_flows", true, delta)
+			get_tree().call_group("pins", "equalize_current_flows", false, delta)
 #			get_tree().call_group("wires", "equalize_voltage")
 #			get_tree().call_group("pins", "propagate")
 #			get_tree().call_group("pins", "sum_up_neighbor_tensions")
@@ -496,6 +501,11 @@ func _process(delta):
 #			get_tree().call_group("pins", "sum_up_instant_tensions")
 
 			get_tree().call_group("wires", "update_material_properties")
+
+
+
+#			get_tree().call_group("pins", "sum_up_charge_flows", delta)
+
 #			for l in range(1):
 #				get_tree().call_group("pins", "equalize_current_flows")
 #			get_tree().call_group("wires", "update_material_properties")

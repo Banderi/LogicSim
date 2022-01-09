@@ -163,10 +163,157 @@ func sum_up_instant_tensions():
 		tension = overall_instant_tension / source_tensions.size()
 	source_tensions = {}
 
-func curr_summ(V0, arr_V, arr_R):
-	var total = 0
+var capacitance = 0.00000000001
+var charge_stored = 0.0
+func add_charge(volts):
+	var max_c = max_charge(volts)
+	var charge_goal = max(charge_stored, capacitance * volts)
+	var charge_diff = charge_goal - charge_stored
+	DebugLogger.logme(self, [
+		"Charge in: ", Color(1,1,1),
+		logic.proper(charge_stored, "C ", true), Color(1,1,0),
+		"+ ( ", Color(1,1,1),
+#		logic.proper(charge_diff, "C ", true), Color(1,1,0),
+		logic.proper(capacitance, "F ", true), Color(1,0,1),
+		"* ", Color(1,1,1),
+		logic.proper(volts, "V ", true), Color(1,0.2,0.2),
+		") = ", Color(1,1,1),
+		logic.proper(charge_stored + charge_diff, "C ", true), Color(1,1,0),
+	])
+	charge_stored += charge_diff * 1.0
+	pass
+func remove_charge(curr, delta):
+	if curr > 0:
+		curr = 0
+	var charge_depletion = curr * delta
+	var charge_depletion_clamped = charge_depletion
+	if charge_stored + charge_depletion < 0.0:
+		charge_depletion_clamped = -charge_stored
+	DebugLogger.logme(self, [
+		"Charge out: ", Color(1,1,1),
+		logic.proper(charge_stored, "C ", true), Color(1,1,0),
+		"+ ( ", Color(1,1,1),
+#		logic.proper(abs(charge_depletion), "C ", true), Color(1,1,0),
+		logic.proper(curr, "C ", true), Color(1,1,0),
+		"* ", Color(1,1,1),
+		delta, Color(1,1,1),
+		" ) = ", Color(1,1,1),
+		logic.proper(charge_stored + charge_depletion_clamped, "C ", true), Color(1,1,0),
+	])
+	charge_stored += charge_depletion_clamped * 1.0
+	pass
+func max_charge(volts):
+	return capacitance * volts
+func get_max_current_in(delta, volts):
+	var volts_str = ""
+	if volts > 0:
+		volts_str = logic.proper(volts, "V ", true)
+	else:
+		volts_str = "n/a "
+		volts = 0
+	var max_in = max_charge(volts) / delta
+	DebugLogger.logme(self, [
+		"Max current in: ", Color(1,1,1),
+		logic.proper(capacitance, "F ", true), Color(1,1,0),
+		"* ", Color(1,1,1),
+		volts_str, Color(1,0.2,0.2),
+		"/ ", Color(1,1,1),
+		delta, Color(1,1,1),
+		" = ", Color(1,1,1),
+		logic.proper(max_in, "A ", true), Color(1,1,0)
+	])
+	return max_in
+func get_max_current_out(delta):
+	var max_out = charge_stored / delta
+	DebugLogger.logme(self, [
+		"Max current out: ", Color(1,1,1),
+		logic.proper(charge_stored, "C ", true), Color(1,1,0),
+		"/ ", Color(1,1,1),
+		delta, Color(1,1,1),
+		" = ", Color(1,1,1),
+		logic.proper(-max_out, "A ", true), Color(1,1,0)
+	])
+	return -max_out
+func sum_up_charge_flows(delta):
+	if enabled && !is_source: # ignore sources
+		DebugLogger.logme(self, "\nSumming up charge flows...")
+		var arr_V = []
+		var arr_R = []
+		for w in wires_list:
+			if w.is_enabled() && w.resistance != 0:
+				var nn = w.get_B_from_A(self)
+				arr_V.push_back(nn.tension)
+				arr_R.push_back(w.resistance)
+				DebugLogger.logme(self, [
+					"  > Wire: ", Color(1,1,1),
+					logic.proper(nn.tension, "V ", true), Color(1,0.2,0.2),
+					logic.proper(w.resistance, "O. ", true), Color(1,0.5,0),
+					logic.proper(w.current, "A ", true), Color(1,1,0),
+					"> " + nn.get_name(), Color(1,1,1),
+					" (" + str(nn) + ")", Color(0.65,0.65,0.65)
+				])
+		var vsum = 0
+		var csum = 0
+		if arr_V.size() > 0:
+			vsum = volts_summ(tension, arr_V, true)
+			csum = curr_summ(tension, arr_V, arr_R, true)
+		add_charge(vsum)
+		remove_charge(csum, delta)
+		if charge_stored < 0.0:
+			charge_stored = 0.0
+	pass
+
+func volts_summ(V0, arr_V, only_in_flow = false):
+	var sum = 0
+	if only_in_flow:
+		DebugLogger.logme(self, "Tensions coming in:")
+	else:
+		DebugLogger.logme(self, "Sum of tensions:")
 	for i in arr_V.size():
-		total += (arr_V[i]-V0)/arr_R[i]
+		var pt = arr_V[i] - V0
+		DebugLogger.logme(self, [
+			"     ", Color(1,1,1),
+			logic.proper(pt, "V ", true), Color(1,0.2,0.2)
+		])
+		sum += pt
+	if only_in_flow:
+		sum = max(sum, 0.0)
+		DebugLogger.logme(self, [
+			"  = ", Color(1,1,1),
+			logic.proper(sum, "V", true), Color(1,0.2,0.2),
+			" (clamped to zero)", Color(1,1,1)
+		])
+	else:
+		DebugLogger.logme(self, [
+			"  = ", Color(1,1,1),
+			logic.proper(sum, "V ", true), Color(1,0.2,0.2)
+		])
+	return sum
+func curr_summ(V0, arr_V, arr_R, only_out_flow = false):
+	var total = 0
+	if only_out_flow:
+		DebugLogger.logme(self, "Currents going out:")
+	else:
+		DebugLogger.logme(self, "Sum of currents:")
+	for i in arr_V.size():
+		var pi = (arr_V[i]-V0)/arr_R[i]
+		DebugLogger.logme(self, [
+			"     ", Color(1,1,1),
+			logic.proper(pi, "A ", true), Color(1,1,0)
+		])
+		total += pi
+	if only_out_flow:
+		total = min(total, 0.0)
+		DebugLogger.logme(self, [
+			"  = ", Color(1,1,1),
+			logic.proper(total, "A ", true), Color(1,1,0),
+			" (clamped to zero)", Color(1,1,1)
+		])
+	else:
+		DebugLogger.logme(self, [
+			"  = ", Color(1,1,1),
+			logic.proper(total, "A ", true), Color(1,1,0)
+		])
 	return total
 func funky_summ(V0, arr_V, arr_R):
 	var lhs = 0
@@ -182,58 +329,33 @@ func funky_summ(V0, arr_V, arr_R):
 	var total = V0 * lhs + rhs
 	pass
 	return total
-func mystery_equation(V0, arr_V, arr_R):
+func mystery_equation(V0, arr_V, arr_R, max_current):
 	var lhs = 0
 	var rhs = 0
 	for i in arr_V.size():
 		lhs += 1.0 / arr_R[i]
 		rhs += arr_V[i] / arr_R[i]
 
-	var new_V0 = rhs / lhs
+	var new_V0 = (rhs - max_current) / lhs
 	pass
 	return new_V0
-func equalize_current_flows():
+func equalize_current_flows(terminations, delta):
+	if !terminations:
+		var ww = wires_list.size()
+		if ww == 1:
+			return
+	elif terminations:
+		var ww = wires_list.size()
+		if ww != 1:
+			return
+
 	if enabled && !is_source: # ignore sources
-		# update tension with received INSTANT TENSION
 		DebugLogger.logme(self, "\nEqualizing current flows...")
 
-#		if wires_list.size() == 2 && wires_list[1].resistance == 500:
-#			var w1 = wires_list[0]
-#			var w2 = wires_list[1]
-#			var tp1 = w1.get_B_from_A(self)
-#			var tp2 = w2.get_B_from_A(self)
-#
-#
-#			var I1 = w1.current
-#			var V1 = tp1.tension
-#			var R1 = w1.resistance
-#
-#			var I2 = w2.current
-#			var V2 = tp2.tension
-#			var R2 = w2.resistance
-#
-#			var V0 = tension
-#			# sanity checks...
-#			var cc1 = I1 - abs((V1-V0)/R1)
-#			var cc2 = I2 - abs((V2-V0)/R2)
-#
-#			var tsum = curr_summ(V0, [V1, V2], [R1, R2])
-#			var ssum = I1 - I2
-#			var fsum = funky_summ(V0, [V1, V2], [R1, R2])
-#
-#			var new_V0 = mystery_equation(V0, [V1, V2], [R1, R2])
-#
-#			var new_I1 = ((V1-new_V0)/R1)
-#			var new_I2 = ((V2-new_V0)/R2)
-#
-#
-#			var asdasdda = 34
+#		if get_name() == "Node 4":
 #			pass
-
-		if get_name() == "Node 4":
-			pass
-		if get_name() == "Node 2":
-			pass
+#		if get_name() == "Node 2":
+#			pass
 
 		var arr_V = []
 		var arr_R = []
@@ -258,13 +380,41 @@ func equalize_current_flows():
 #				else:
 #					arr_R.push_back(w.resistance)
 		if arr_V.size() > 0:
-			var tsum = curr_summ(tension, arr_V, arr_R)
-			var new_V0 = mystery_equation(tension, arr_V, arr_R)
+			var vsum = volts_summ(tension, arr_V)
+			var csum = curr_summ(tension, arr_V, arr_R)
+			var max_in = get_max_current_in(delta, vsum) # this is POSITIVE
+			var max_out = get_max_current_out(delta) # this is NEGATIVE
 
-			tension = new_V0 # fingers crossed......
+			var currents_range = clamp(csum, max_out, max_in)
+			DebugLogger.logme(self, [
+				"Clamped current: ", Color(1,1,1),
+				logic.proper(currents_range, "A ", true), Color(1,1,0)
+			])
+
+			var new_V0 = mystery_equation(tension, arr_V, arr_R, currents_range)
+			DebugLogger.logme(self, [
+				"New tension: ", Color(1,1,1),
+				logic.proper(new_V0, "V ", true), Color(1,0.2,0.2)
+			])
+
+			if terminations && charge_stored == 0:
+				tension = 0
+			else:
+				tension = new_V0 # fingers crossed......
+
+#			if !terminations || max_c != 0:
+#				new_V0 = mystery_equation(tension, arr_V, arr_R, max_c)
+#				DebugLogger.logme(self, "Setting new tension...")
+#			else:
+#				new_V0 = tension
+#				DebugLogger.logme(self, "No charge flow available! Tension dropped to zero!")
+#				pass
+
+
 
 		var asdasdda = 34
 		pass
+	sum_up_instant_tensions() # this needs to be done here, *AFTER* calculating the pin's tension!!
 	pass
 
 func _process(delta):
