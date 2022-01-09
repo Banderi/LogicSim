@@ -71,7 +71,8 @@ func sum_up_neighbor_tensions():
 	oldtension = tension
 	tension += overall_tension_drop
 	cleanup_tensions()
-func propagate():
+func propagate(only_perfect_wires = false):
+
 	DebugLogger.clearme(self)
 	DebugLogger.logme(self, [
 		get_name(), Color(1,1,1),
@@ -84,18 +85,20 @@ func propagate():
 	for w in wires_list:
 		if !w.is_enabled():
 			DebugLogger.logme(self, "  > Wire is asleep!")
-		else:
+		elif !only_perfect_wires || str(w.resistance) == "0":
 			var target_pin = w.get_B_from_A(self)
 			var tA = tension
 			var tB = target_pin.tension
 			if !target_pin.is_source:
-				var voltage = w.query_tension_drop(self, target_pin, tA, tB)
+#				var voltage = w.query_tension_drop(self, target_pin, tA, tB)
+				var voltage = tB - tA
 				DebugLogger.logme(self, [
 					"  > Sending: ", Color(1,1,1),
 					logic.proper(voltage, "V", true), Color(1,0.2,0.2),
 					" to " + target_pin.get_name(), Color(1,1,1),
 					" (" + str(target_pin) + ")", Color(0.65,0.65,0.65)
 				])
+				add_tension_drop_from_neighbor(target_pin, w, voltage)
 				target_pin.add_tension_drop_from_neighbor(self, w, -voltage)
 func cleanup_tensions():
 	# reset tension source/sink
@@ -163,6 +166,54 @@ func sum_up_instant_tensions():
 		tension = overall_instant_tension / source_tensions.size()
 	source_tensions = {}
 
+enum {
+	QUERY_ALL_NEIGHBORS
+	QUERY_ONLY_VALID_RESISTANCE
+	QUERY_ONLY_NON_ZERO_RESISTANCE
+	QUERY_ONLY_PERFECT_WIRES
+	QUERY_ONLY_PERFECT_INSULATORS
+	QUERY_JUMP_OVER_WIRES
+}
+func query_neighbors(query_method, ignore_pins = []):
+	var arr = []
+	match query_method:
+		QUERY_ALL_NEIGHBORS:
+			for w in wires_list:
+				if w.is_enabled():
+					arr.push_back([w, self])
+		QUERY_ONLY_VALID_RESISTANCE:
+			for w in wires_list:
+				if str(w.resistance) != "0" && str(w.resistance) != "inf":
+					if w.is_enabled():
+						arr.push_back([w, self])
+		QUERY_ONLY_NON_ZERO_RESISTANCE:
+			for w in wires_list:
+				if str(w.resistance) != "0":
+					if w.is_enabled():
+						arr.push_back([w, self])
+		QUERY_ONLY_PERFECT_WIRES:
+			for w in wires_list:
+				if str(w.resistance) == "0":
+					if w.is_enabled():
+						arr.push_back([w, self])
+		QUERY_ONLY_PERFECT_INSULATORS:
+			for w in wires_list:
+				if str(w.resistance) == "inf":
+					if w.is_enabled():
+						arr.push_back([w, self])
+		QUERY_JUMP_OVER_WIRES:
+			for w in wires_list:
+				if str(w.resistance) != "0":
+					if w.is_enabled():
+						arr.push_back([w, self])
+				else: # perfect wire!
+					if w.is_enabled():
+						ignore_pins.push_back(self)
+						var next_pin = w.get_B_from_A(self)
+						if !(next_pin in ignore_pins): # skip pins we've already gone over, to prevent loopbacks
+							arr.append_array(next_pin.query_neighbors(QUERY_JUMP_OVER_WIRES, ignore_pins))
+	return arr
+
 var capacitance = 0.00000000001
 var charge_stored = 0.0
 func add_charge(volts):
@@ -171,14 +222,14 @@ func add_charge(volts):
 	var charge_diff = charge_goal - charge_stored
 	DebugLogger.logme(self, [
 		"Charge in: ", Color(1,1,1),
-		logic.proper(charge_stored, "C ", true), Color(1,1,0),
-		"+ ( ", Color(1,1,1),
+#		logic.proper(charge_stored, "C ", true), Color(0,1,0),
+		"( ", Color(1,1,1),
 #		logic.proper(charge_diff, "C ", true), Color(1,1,0),
 		logic.proper(capacitance, "F ", true), Color(1,0,1),
 		"* ", Color(1,1,1),
 		logic.proper(volts, "V ", true), Color(1,0.2,0.2),
 		") = ", Color(1,1,1),
-		logic.proper(charge_stored + charge_diff, "C ", true), Color(1,1,0),
+		logic.proper(charge_diff, "C ", true), Color(0,1,0),
 	])
 	charge_stored += charge_diff * 1.0
 	pass
@@ -191,14 +242,14 @@ func remove_charge(curr, delta):
 		charge_depletion_clamped = -charge_stored
 	DebugLogger.logme(self, [
 		"Charge out: ", Color(1,1,1),
-		logic.proper(charge_stored, "C ", true), Color(1,1,0),
-		"+ ( ", Color(1,1,1),
+#		logic.proper(charge_stored, "C ", true), Color(0,1,0),
+		"( ", Color(1,1,1),
 #		logic.proper(abs(charge_depletion), "C ", true), Color(1,1,0),
-		logic.proper(curr, "C ", true), Color(1,1,0),
+		logic.proper(curr, "C ", true), Color(0,1,0),
 		"* ", Color(1,1,1),
 		delta, Color(1,1,1),
 		" ) = ", Color(1,1,1),
-		logic.proper(charge_stored + charge_depletion_clamped, "C ", true), Color(1,1,0),
+		logic.proper(charge_depletion_clamped, "C ", true), Color(0,1,0),
 	])
 	charge_stored += charge_depletion_clamped * 1.0
 	pass
@@ -239,28 +290,37 @@ func sum_up_charge_flows(delta):
 		DebugLogger.logme(self, "\nSumming up charge flows...")
 		var arr_V = []
 		var arr_R = []
-		for w in wires_list:
-			if w.is_enabled() && w.resistance != 0:
-				var nn = w.get_B_from_A(self)
-				arr_V.push_back(nn.tension)
-				arr_R.push_back(w.resistance)
-				DebugLogger.logme(self, [
-					"  > Wire: ", Color(1,1,1),
-					logic.proper(nn.tension, "V ", true), Color(1,0.2,0.2),
-					logic.proper(w.resistance, "O. ", true), Color(1,0.5,0),
-					logic.proper(w.current, "A ", true), Color(1,1,0),
-					"> " + nn.get_name(), Color(1,1,1),
-					" (" + str(nn) + ")", Color(0.65,0.65,0.65)
-				])
+		var list = query_neighbors(QUERY_JUMP_OVER_WIRES)
+		for wentry in list:
+			var w = wentry[0]
+			var nn = w.get_B_from_A(wentry[1])
+			arr_V.push_back(nn.tension)
+			arr_R.push_back(w.resistance)
+			DebugLogger.logme(self, [
+				"  > Wire: ", Color(1,1,1),
+				logic.proper(nn.tension, "V ", true), Color(1,0.2,0.2),
+				logic.proper(w.resistance, "O. ", true), Color(1,0.5,0),
+				logic.proper(w.current, "A ", true), Color(1,1,0),
+				"> " + nn.get_name(), Color(1,1,1),
+				" (" + str(nn) + ")", Color(0.65,0.65,0.65)
+			])
 		var vsum = 0
 		var csum = 0
 		if arr_V.size() > 0:
 			vsum = volts_summ(tension, arr_V, true)
 			csum = curr_summ(tension, arr_V, arr_R, true)
+		DebugLogger.logme(self, [
+			"Charge stored: ", Color(1,1,1),
+			logic.proper(charge_stored, "C ", true), Color(0,1,0)
+		])
 		add_charge(vsum)
 		remove_charge(csum, delta)
 		if charge_stored < 0.0:
 			charge_stored = 0.0
+		DebugLogger.logme(self, [
+			"New charge: ", Color(1,1,1),
+			logic.proper(charge_stored, "C ", true), Color(0,1,0)
+		])
 	pass
 
 func volts_summ(V0, arr_V, only_in_flow = false):
@@ -352,27 +412,69 @@ func equalize_current_flows(terminations, delta):
 	if enabled && !is_source: # ignore sources
 		DebugLogger.logme(self, "\nEqualizing current flows...")
 
-#		if get_name() == "Node 4":
-#			pass
-#		if get_name() == "Node 2":
-#			pass
 
 		var arr_V = []
 		var arr_R = []
-		for w in wires_list:
-			if w.is_enabled() && w.resistance != 0:
-				var nn = w.get_B_from_A(self)
-				arr_V.push_back(nn.tension)
-				arr_R.push_back(w.resistance)
 
-				DebugLogger.logme(self, [
-					"  > Wire: ", Color(1,1,1),
-					logic.proper(nn.tension, "V ", true), Color(1,0.2,0.2),
-					logic.proper(w.resistance, "O. ", true), Color(1,0.5,0),
-					logic.proper(w.current, "A ", true), Color(1,1,0),
-					"> " + nn.get_name(), Color(1,1,1),
-					" (" + str(nn) + ")", Color(0.65,0.65,0.65)
-				])
+		var list = query_neighbors(QUERY_JUMP_OVER_WIRES)
+		if get_name() == "Node 4":
+			pass
+#		if get_name() == "Node 2":
+#			pass
+		for wentry in list:
+			var w = wentry[0]
+			var nn = w.get_B_from_A(wentry[1])
+			arr_V.push_back(nn.tension)
+			arr_R.push_back(w.resistance)
+			DebugLogger.logme(self, [
+				"  > Resistor: ", Color(1,1,1),
+				logic.proper(nn.tension, "V ", true), Color(1,0.2,0.2),
+				logic.proper(w.resistance, "O. ", true), Color(1,0.5,0),
+				logic.proper(w.current, "A ", true), Color(1,1,0),
+				"> " + nn.get_name(), Color(1,1,1),
+				" (" + str(nn) + ")", Color(0.65,0.65,0.65)
+			])
+
+#		for w in wires_list:
+#			if w.is_enabled() && str(w.resistance) != "0":
+#				var nn = w.get_B_from_A(self)
+#				arr_V.push_back(nn.tension)
+#				arr_R.push_back(w.resistance)
+#
+#				DebugLogger.logme(self, [
+#					"  > Resistor: ", Color(1,1,1),
+#					logic.proper(nn.tension, "V ", true), Color(1,0.2,0.2),
+#					logic.proper(w.resistance, "O. ", true), Color(1,0.5,0),
+#					logic.proper(w.current, "A ", true), Color(1,1,0),
+#					"> " + nn.get_name(), Color(1,1,1),
+#					" (" + str(nn) + ")", Color(0.65,0.65,0.65)
+#				])
+
+#			if w.is_enabled() && str(w.resistance) == "0":
+#				var nn = w.get_B_from_A(self)
+#				var tA = tension
+#				var tB = nn.tension
+#				var voltage = tB - tA
+#				DebugLogger.logme(self, [
+#					"  > Sending: ", Color(1,1,1),
+#					logic.proper(voltage, "V", true), Color(1,0.2,0.2),
+#					" to " + nn.get_name(), Color(1,1,1),
+#					" (" + str(nn) + ")", Color(0.65,0.65,0.65)
+#				])
+#				nn.add_tension_drop_from_neighbor(self, w, -voltage)
+
+
+#				arr_V.push_back(nn.tension)
+#				arr_R.push_back(0.1)
+#
+#				DebugLogger.logme(self, [
+#					"  > Wire: ", Color(1,1,1),
+#					logic.proper(nn.tension, "V ", true), Color(1,0.2,0.2),
+#					logic.proper(w.resistance, "O. ", true), Color(1,0.5,0),
+#					logic.proper(w.current, "A ", true), Color(1,1,0),
+#					"> " + nn.get_name(), Color(1,1,1),
+#					" (" + str(nn) + ")", Color(0.65,0.65,0.65)
+#				])
 #			if w.is_enabled():
 #				arr_V.push_back(w.get_B_from_A(self).tension)
 #				if w.resistance == 0:
@@ -385,22 +487,27 @@ func equalize_current_flows(terminations, delta):
 			var max_in = get_max_current_in(delta, vsum) # this is POSITIVE
 			var max_out = get_max_current_out(delta) # this is NEGATIVE
 
-			var currents_range = clamp(csum, max_out, max_in)
+#			var currents_optimal = clamp(csum, max_out, max_in)
+			var currents_optimal = (max_in + max_out) / 2
 			DebugLogger.logme(self, [
-				"Clamped current: ", Color(1,1,1),
-				logic.proper(currents_range, "A ", true), Color(1,1,0)
+				"Optimal current: ", Color(1,1,1),
+				logic.proper(currents_optimal, "A ", true), Color(1,1,0)
 			])
 
-			var new_V0 = mystery_equation(tension, arr_V, arr_R, currents_range)
-			DebugLogger.logme(self, [
-				"New tension: ", Color(1,1,1),
-				logic.proper(new_V0, "V ", true), Color(1,0.2,0.2)
-			])
+			var new_V0 = mystery_equation(tension, arr_V, arr_R, currents_optimal)
 
 			if terminations && charge_stored == 0:
 				tension = 0
 			else:
 				tension = new_V0 # fingers crossed......
+			DebugLogger.logme(self, [
+				"New tension: ", Color(1,1,1),
+				logic.proper(new_V0, "V ", true), Color(1,0.2,0.2)
+			])
+			DebugLogger.logme(self, [
+				"New total current: ", Color(1,1,1),
+				logic.proper(curr_summ(tension, arr_V, arr_R), "A ", true), Color(1,1,0)
+			])
 
 #			if !terminations || max_c != 0:
 #				new_V0 = mystery_equation(tension, arr_V, arr_R, max_c)

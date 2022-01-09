@@ -239,7 +239,7 @@ func refresh_probes(tick = true):
 				else:
 					$L/Label.append_bbcode("\nWire junction")
 				read(probing.tension, tick, "Tension", "Volts", Color(1, 0, 0))
-				read(probing.charge_stored, tick, "Charge", "Coulombs", Color(1, 1, 0))
+				read(probing.charge_stored, tick, "Charge", "Coulombs", Color(0, 1, 0))
 			1:
 				$L/Label.append_bbcode("\nA-B connection")
 				read(probing.current, tick, "Current", "Amps", Color(1, 1, 0), true) # 500.0

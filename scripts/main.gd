@@ -493,7 +493,8 @@ func _process(delta):
 			get_tree().call_group("pins", "equalize_current_flows", true, delta)
 			get_tree().call_group("pins", "equalize_current_flows", false, delta)
 #			get_tree().call_group("wires", "equalize_voltage")
-#			get_tree().call_group("pins", "propagate")
+
+#			get_tree().call_group("pins", "propagate", true)
 #			get_tree().call_group("pins", "sum_up_neighbor_tensions")
 
 			# TODO: this is a bit costly....
