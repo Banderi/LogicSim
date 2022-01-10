@@ -476,6 +476,9 @@ func reload_database():
 func _process(delta):
 	$BACK/grid.update()
 
+	if delta == 0.0:
+		delta = 0.000001
+
 	if (logic.simulation_go > 0):
 			logic.simulation_go -= 1
 	if (logic.simulation_go != 0):
@@ -483,33 +486,28 @@ func _process(delta):
 		for n in range(0, logic.iteration_times):
 			get_tree().call_group("graph", "debugger_log_clear")
 
-			get_tree().call_group("pins", "sum_up_charge_flows", delta)
-
-			get_tree().call_group("sources", "maintain_tension") # TO REWRITE!!!!! <---- calculate ISLANDS of WIRES!!!
+			# ATTEMPT ONE:
 #			get_tree().call_group("pins", "sum_up_instant_tensions")
 #			get_tree().call_group("wires", "equalize_instant_tensions")
-
-
-			get_tree().call_group("pins", "equalize_current_flows", true, delta)
-			get_tree().call_group("pins", "equalize_current_flows", false, delta)
 #			get_tree().call_group("wires", "equalize_voltage")
-
 #			get_tree().call_group("pins", "propagate", true)
 #			get_tree().call_group("pins", "sum_up_neighbor_tensions")
-
 			# TODO: this is a bit costly....
 #			get_tree().call_group("sources", "maintain_tension") # propagate SOURCE voltage through wires a second time.
 #			get_tree().call_group("pins", "sum_up_instant_tensions")
-
-			get_tree().call_group("wires", "update_material_properties")
-
-
-
-#			get_tree().call_group("pins", "sum_up_charge_flows", delta)
-
 #			for l in range(1):
 #				get_tree().call_group("pins", "equalize_current_flows")
 #			get_tree().call_group("wires", "update_material_properties")
+
+			# ATTEMPT TWO: these SORTA work but also don't. >:(
+#			get_tree().call_group("pins", "sum_up_charge_flows", delta)
+			get_tree().call_group("sources", "maintain_tension") # TO REWRITE!!!!! <---- calculate ISLANDS of WIRES!!!
+			get_tree().call_group("pins", "equalize_current_flows", true, delta)
+			get_tree().call_group("pins", "equalize_current_flows", false, delta)
+			get_tree().call_group("wires", "update_material_properties")
+
+			# ATTEMPT THREE:
+
 
 			get_tree().call_group("graph", "refresh_probes", false)
 

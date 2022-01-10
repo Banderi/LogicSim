@@ -4,7 +4,7 @@ var probe = null
 var main = null
 
 var simulation_speed = 0.5
-var iteration_times = 4
+var iteration_times = 1
 var simulation_go = -1
 
 # temporary solution...

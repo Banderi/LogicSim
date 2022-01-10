@@ -174,7 +174,9 @@ enum {
 	QUERY_ONLY_PERFECT_INSULATORS
 	QUERY_JUMP_OVER_WIRES
 }
-func query_neighbors(query_method, ignore_pins = []):
+var cached_wire_island_list = null
+var use_cached_island_list = false
+func query_neighbors(query_method, ignore_pins = [], depth = 0):
 	var arr = []
 	match query_method:
 		QUERY_ALL_NEIGHBORS:
@@ -202,6 +204,8 @@ func query_neighbors(query_method, ignore_pins = []):
 					if w.is_enabled():
 						arr.push_back([w, self])
 		QUERY_JUMP_OVER_WIRES:
+			if use_cached_island_list && cached_wire_island_list != null && depth == 0:
+				return cached_wire_island_list
 			for w in wires_list:
 				if str(w.resistance) != "0":
 					if w.is_enabled():
@@ -211,7 +215,9 @@ func query_neighbors(query_method, ignore_pins = []):
 						ignore_pins.push_back(self)
 						var next_pin = w.get_B_from_A(self)
 						if !(next_pin in ignore_pins): # skip pins we've already gone over, to prevent loopbacks
-							arr.append_array(next_pin.query_neighbors(QUERY_JUMP_OVER_WIRES, ignore_pins))
+							arr.append_array(next_pin.query_neighbors(QUERY_JUMP_OVER_WIRES, ignore_pins, depth + 1))
+	if depth == 0 && use_cached_island_list:
+		cached_wire_island_list = arr
 	return arr
 
 var capacitance = 0.00000000001
@@ -264,11 +270,11 @@ func get_max_current_in(delta, volts):
 		volts = 0
 	var max_in = max_charge(volts) / delta
 	DebugLogger.logme(self, [
-		"Max current in: ", Color(1,1,1),
-		logic.proper(capacitance, "F ", true), Color(1,1,0),
+		"Limit current in: ( ", Color(1,1,1),
+		logic.proper(capacitance, "F ", true), Color(1,0,1),
 		"* ", Color(1,1,1),
 		volts_str, Color(1,0.2,0.2),
-		"/ ", Color(1,1,1),
+		") / ", Color(1,1,1),
 		delta, Color(1,1,1),
 		" = ", Color(1,1,1),
 		logic.proper(max_in, "A ", true), Color(1,1,0)
@@ -277,8 +283,8 @@ func get_max_current_in(delta, volts):
 func get_max_current_out(delta):
 	var max_out = charge_stored / delta
 	DebugLogger.logme(self, [
-		"Max current out: ", Color(1,1,1),
-		logic.proper(charge_stored, "C ", true), Color(1,1,0),
+		"Limit current out: ", Color(1,1,1),
+		logic.proper(charge_stored, "C ", true), Color(0,1,0),
 		"/ ", Color(1,1,1),
 		delta, Color(1,1,1),
 		" = ", Color(1,1,1),
@@ -484,26 +490,28 @@ func equalize_current_flows(terminations, delta):
 		if arr_V.size() > 0:
 			var vsum = volts_summ(tension, arr_V)
 			var csum = curr_summ(tension, arr_V, arr_R)
-			var max_in = get_max_current_in(delta, vsum) # this is POSITIVE
-			var max_out = get_max_current_out(delta) # this is NEGATIVE
+#			var max_in = get_max_current_in(delta, vsum) # this is POSITIVE
+#			var max_out = get_max_current_out(delta) # this is NEGATIVE
+#			max_in = 0
 
 #			var currents_optimal = clamp(csum, max_out, max_in)
-			var currents_optimal = (max_in + max_out) / 2
+#			var currents_optimal = (max_in + max_out) / 2
 			DebugLogger.logme(self, [
 				"Optimal current: ", Color(1,1,1),
-				logic.proper(currents_optimal, "A ", true), Color(1,1,0)
+				logic.proper(0, "A ", true), Color(1,1,0)
 			])
 
-			var new_V0 = mystery_equation(tension, arr_V, arr_R, currents_optimal)
+			var new_V0 = mystery_equation(tension, arr_V, arr_R, 0)
 
-			if terminations && charge_stored == 0:
-				tension = 0
-			else:
-				tension = new_V0 # fingers crossed......
+			if terminations && csum < 0:
+				new_V0 = 0
+#			else:
+#				tension = new_V0 # fingers crossed......
 			DebugLogger.logme(self, [
 				"New tension: ", Color(1,1,1),
 				logic.proper(new_V0, "V ", true), Color(1,0.2,0.2)
 			])
+			tension = new_V0 # fingers crossed......
 			DebugLogger.logme(self, [
 				"New total current: ", Color(1,1,1),
 				logic.proper(curr_summ(tension, arr_V, arr_R), "A ", true), Color(1,1,0)

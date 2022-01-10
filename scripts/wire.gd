@@ -146,6 +146,7 @@ func refresh_impedences(setting):
 				resistance = "inf"
 			else:
 				resistance = 1.0 / conductance
+
 func update_material_properties():
 	$L/Label.rect_position = (orig_pin.global_position + dest_pin.global_position) / 2 - Vector2(300, 0)
 #	$L/Label.rect_position = Vector2()
@@ -172,6 +173,8 @@ func update_material_properties():
 		if !dest_pin.enabled || !orig_pin.enabled:
 			cond_coeff = 0
 		current = voltage * cond_coeff
+		if abs(current) < 0.000000000001:
+			current = 0
 
 #	$L/Label.text = str(stepify(abs(current),0.001)) + "A"
 	if focused:
