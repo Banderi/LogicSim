@@ -144,8 +144,8 @@ func draw_points(set):
 	var col = set["color"]
 	var points = set["points"]
 	for i in range(0, min(points.size() - 2, (2 * max_x / zoom_x) + 1), 1):
-		var p1_x = max(max_x - (zoom_x * logic.simulation_speed) * i, 0)
-		var p2_x = max(max_x - (zoom_x * logic.simulation_speed) * (i + 1), 0)
+		var p1_x = max(max_x - (zoom_x * logic.get_pref("simulation_speed")) * i, 0)
+		var p2_x = max(max_x - (zoom_x * logic.get_pref("simulation_speed")) * (i + 1), 0)
 
 		var p = points[i]
 		var p2 = points[i + 1]
@@ -239,7 +239,7 @@ func refresh_probes(tick = true):
 				else:
 					$L/Label.append_bbcode("\nWire junction")
 				read(probing.tension, tick, "Tension", "Volts", Color(1, 0, 0))
-				read(probing.charge_stored, tick, "Charge", "Coulombs", Color(0, 1, 0))
+#				read(probing.charge_stored, tick, "Charge", "Coulombs", Color(0, 1, 0))
 			1:
 				$L/Label.append_bbcode("\nA-B connection")
 				read(probing.current, tick, "Current", "Amps", Color(1, 1, 0), true) # 500.0
@@ -258,7 +258,7 @@ func refresh_probes(tick = true):
 
 	# update divider lines tick
 	if tick:
-		div_t += 1 * logic.simulation_speed
+		div_t += 1 * logic.get_pref("simulation_speed")
 		while div_t > div_split_x:
 			div_t -= div_split_x
 	update()

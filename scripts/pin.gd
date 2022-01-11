@@ -38,133 +38,6 @@ func update_node_data():
 var wires_list = []
 var pin_neighbors = []
 
-var tension_neighbors = {}
-func add_tension_from_neighbor(WIRE_NODE, t, conductance, node, source_t = 0, degree = 0):
-	if enabled && !tension_neighbors.has(node):
-		tension_neighbors[node] = [t, conductance, degree, source_t, WIRE_NODE]
-func add_tension_drop_from_neighbor(SOURCE_PIN_NODE, WIRE_NODE, voltage):
-	if enabled && !tension_neighbors.has(SOURCE_PIN_NODE):
-		tension_neighbors[SOURCE_PIN_NODE] = [voltage, WIRE_NODE]
-func sum_up_neighbor_tensions():
-	DebugLogger.logme(self, "\nSumming up all the tensions received...")
-	DebugLogger.logme(self, "Neighbors: " + str(tension_neighbors.size()))
-
-	var overall_tension_drop = 0
-	for t in tension_neighbors:
-		var data = tension_neighbors[t]
-		overall_tension_drop += data[0]
-		DebugLogger.logme(self, [
-			"  > Received: ", Color(1,1,1),
-			logic.proper(data[0], "V", true), Color(1,0.2,0.2),
-			" @ " + logic.proper(data[1].conductance, "S", true), Color(0,1,1),
-			" from " + t.get_name(), Color(1,1,1),
-			" (" + str(t) + ")", Color(0.65,0.65,0.65)
-		])
-	if (tension_neighbors.size() > 0):
-		overall_tension_drop = overall_tension_drop / tension_neighbors.size()
-
-	DebugLogger.logme(self, [
-		"Total tension drop: ", Color(1,1,1),
-		str("+" if overall_tension_drop > 0 else "") + logic.proper(overall_tension_drop, "V", true), Color(1,0.2,0.2)
-	])
-
-	oldtension = tension
-	tension += overall_tension_drop
-	cleanup_tensions()
-func propagate(only_perfect_wires = false):
-
-	DebugLogger.clearme(self)
-	DebugLogger.logme(self, [
-		get_name(), Color(1,1,1),
-		" (" + str(self) + ")", Color(0.65,0.65,0.65)
-	])
-	if !enabled:
-		DebugLogger.logme(self, "\nPin is disabled! Sleeping...")
-		return
-	DebugLogger.logme(self, "\nPropagating tensions...")
-	for w in wires_list:
-		if !w.is_enabled():
-			DebugLogger.logme(self, "  > Wire is asleep!")
-		elif !only_perfect_wires || str(w.resistance) == "0":
-			var target_pin = w.get_B_from_A(self)
-			var tA = tension
-			var tB = target_pin.tension
-			if !target_pin.is_source:
-#				var voltage = w.query_tension_drop(self, target_pin, tA, tB)
-				var voltage = tB - tA
-				DebugLogger.logme(self, [
-					"  > Sending: ", Color(1,1,1),
-					logic.proper(voltage, "V", true), Color(1,0.2,0.2),
-					" to " + target_pin.get_name(), Color(1,1,1),
-					" (" + str(target_pin) + ")", Color(0.65,0.65,0.65)
-				])
-				add_tension_drop_from_neighbor(target_pin, w, voltage)
-				target_pin.add_tension_drop_from_neighbor(self, w, -voltage)
-func cleanup_tensions():
-	# reset tension source/sink
-	var s = "+" if tension > 0.01 else ""
-	$L/Label2.text = s + str(stepify(tension,0.01)) + "V"
-	tension_neighbors = {}
-
-var source_tensions = {}
-func maintain_tension(): # actual source of tension!
-	if is_source:
-		DebugLogger.logme(self, "\nUpdating SOURCE TENSION")
-		tension = tension_static + 2 * tension_amplitude * sin(tension_phase * PI / 180)
-
-		# update tension phase
-		tension_phase += logic.simulation_speed * tension_speed * 4
-		while tension_phase >= 360:
-			tension_phase -= 360
-
-		# 2nd propagation loop, JUST for SOURCES
-		propagate_instant_tension(tension, self, null)
-func propagate_instant_tension(t, source_node, delegate_wire):
-	if enabled:
-		# update tension with received INSTANT TENSION
-		DebugLogger.logme(self, "\nPropagating instant tension...")
-
-		if source_node != self && !(source_node in source_tensions): # ignore same-source loopbacks.
-			DebugLogger.logme(self, [
-				"Received: ", Color(1,1,1),
-				logic.proper(t, "V", true), Color(1,0.2,0.2),
-				" from " + source_node.get_name(), Color(1,1,1),
-				" (" + str(source_node) + ")", Color(0.65,0.65,0.65)
-			])
-			if source_tensions.size() > 0:
-				logic.main.tooltip("SHORT CIRCUIT!!!!")
-				# UH OH.
-				# SHORT CIRCUIT!!
-				pass
-			source_tensions[source_node] = t
-
-		var wires_done = 0
-		for w in wires_list:
-			if !w.is_enabled():
-				DebugLogger.logme(self, "  > Wire is asleep!")
-			elif w != delegate_wire: # ignore the wire that literally just trasmitted us the tension.
-				var target_pin = w.get_B_from_A(self)
-				if !(source_node in target_pin.source_tensions):
-					if str(w.resistance) == "0": # ONLY propagate through ideal wires
-						DebugLogger.logme(self, [
-							"  > Sending: ", Color(1,1,1),
-							logic.proper(t, "V", true), Color(1,0.2,0.2),
-							" to " + target_pin.get_name(), Color(1,1,1),
-							" (" + str(target_pin) + ")", Color(0.65,0.65,0.65)
-						])
-						target_pin.propagate_instant_tension(t, source_node, w)
-						wires_done += 1
-		if wires_done == 0:
-			DebugLogger.logme(self, "No wires found!")
-func sum_up_instant_tensions():
-	if is_source:
-		return
-	var overall_instant_tension = 0
-	for s in source_tensions:
-		overall_instant_tension += source_tensions[s]
-	if source_tensions.size() > 0:
-		tension = overall_instant_tension / source_tensions.size()
-	source_tensions = {}
 
 enum {
 	QUERY_ALL_NEIGHBORS
@@ -214,11 +87,174 @@ func query_neighbors(query_method, ignore_pins = [], depth = 0):
 					if w.is_enabled():
 						ignore_pins.push_back(self)
 						var next_pin = w.get_B_from_A(self)
-						if !(next_pin in ignore_pins): # skip pins we've already gone over, to prevent loopbacks
+						# skip pins we've already gone over, to prevent loopbacks
+						# also, ignore sources. sources do not "connect" normally
+						# to other parts of the circuits - treat them all as isolated!
+						if !(next_pin in ignore_pins) && !next_pin.is_source:
 							arr.append_array(next_pin.query_neighbors(QUERY_JUMP_OVER_WIRES, ignore_pins, depth + 1))
 	if depth == 0 && use_cached_island_list:
 		cached_wire_island_list = arr
 	return arr
+
+var tension_neighbors = {}
+func add_tension_from_neighbor(SOURCE_PIN_NODE, WIRE_NODE, t):
+	if enabled && !tension_neighbors.has(SOURCE_PIN_NODE):
+		tension_neighbors[SOURCE_PIN_NODE] = [t, WIRE_NODE]
+func add_tension_drop_from_neighbor(SOURCE_PIN_NODE, WIRE_NODE, voltage):
+	if enabled && !tension_neighbors.has(SOURCE_PIN_NODE):
+		tension_neighbors[SOURCE_PIN_NODE] = [voltage, WIRE_NODE]
+func sum_up_neighbor_tensions():
+	var neighbors = tension_neighbors.size()
+	if neighbors == 0:
+		return # no valid neighbors
+
+	var overall_tension = 0
+	for t in tension_neighbors:
+		var data = tension_neighbors[t]
+		overall_tension += data[0]
+	var new_tension_normalized = 0
+	new_tension_normalized = overall_tension / neighbors
+
+	DebugLogger.logme(self, [
+		"New tension: ( ", Color(1,1,1),
+		logic.proper(overall_tension, "V ", true), Color(1,0.2,0.2),
+		"/ ", Color(1,1,1),
+		neighbors, Color(1,1,1),
+		" ) = ", Color(1,1,1),
+		logic.proper(new_tension_normalized, "V", true), Color(1,0.2,0.2)
+	])
+
+	oldtension = tension
+	tension = new_tension_normalized
+	cleanup_tensions()
+func propagate(only_perfect_wires = false):
+
+	DebugLogger.clearme(self)
+	DebugLogger.logme(self, [
+		get_name(), Color(1,1,1),
+		" (" + str(self) + ")", Color(0.65,0.65,0.65)
+	])
+	if !enabled:
+		DebugLogger.logme(self, "\nPin is disabled! Sleeping...")
+		return
+	DebugLogger.logme(self, "\nPropagating tensions...")
+	for w in wires_list:
+		if !w.is_enabled():
+			DebugLogger.logme(self, "  > Wire is asleep!")
+		elif !only_perfect_wires || str(w.resistance) == "0":
+			var target_pin = w.get_B_from_A(self)
+			var tA = tension
+			var tB = target_pin.tension
+			if !target_pin.is_source:
+#				var voltage = w.query_tension_drop(self, target_pin, tA, tB)
+				var voltage = tB - tA
+				DebugLogger.logme(self, [
+					"  > Sending: ", Color(1,1,1),
+					logic.proper(voltage, "V", true), Color(1,0.2,0.2),
+					" to " + target_pin.get_name(), Color(1,1,1),
+					" (" + str(target_pin) + ")", Color(0.65,0.65,0.65)
+				])
+				add_tension_drop_from_neighbor(target_pin, w, voltage)
+				target_pin.add_tension_drop_from_neighbor(self, w, -voltage)
+func equalize_tensions():
+	DebugLogger.clearme(self)
+	DebugLogger.logme(self, [
+		get_name(), Color(1,1,1),
+		" (" + str(self) + ")", Color(0.65,0.65,0.65)
+	])
+	DebugLogger.logme(self, "\n1) Equalizing tensions...")
+	if !enabled:
+		DebugLogger.logme(self, "Pin is disabled! Sleeping...")
+		return
+	if is_source:
+		DebugLogger.logme(self, "Infinite source! Ignoring...")
+		return
+
+	var list = query_neighbors(QUERY_JUMP_OVER_WIRES)
+	DebugLogger.logme(self, "Neighbors: " + str(list.size()))
+	for wentry in list:
+		var w = wentry[0]
+		var nn = w.get_B_from_A(wentry[1])
+#		arr_V.push_back(nn.tension)
+#		arr_R.push_back(w.resistance)
+		add_tension_from_neighbor(nn, w, nn.tension)
+		DebugLogger.logme(self, [
+			"  > Pin tension: ", Color(1,1,1),
+			logic.proper(nn.tension, "V ", true), Color(1,0.2,0.2),
+			"from " + nn.get_name(), Color(1,1,1),
+			" (" + str(nn) + ")", Color(0.65,0.65,0.65)
+		])
+func cleanup_tensions():
+	# reset tension source/sink
+	var s = "+" if tension > 0.01 else ""
+	$L/Label2.text = s + str(stepify(tension,0.01)) + "V"
+	tension_neighbors = {}
+
+var source_tensions = {}
+func maintain_tension(): # actual source of tension!
+	if is_source:
+		DebugLogger.logme(self, "\n2) Updating SOURCE TENSION")
+		tension = tension_static + 2 * tension_amplitude * sin(tension_phase * PI / 180)
+
+		# update tension phase
+		tension_phase += logic.get_pref("simulation_speed") * tension_speed * 4
+		while tension_phase >= 360:
+			tension_phase -= 360
+
+		DebugLogger.logme(self, [
+			"New tension: ", Color(1,1,1),
+			logic.proper(tension, "V", true), Color(1,0.2,0.2)
+		])
+
+		# 2nd propagation loop, JUST for SOURCES
+		propagate_instant_tension(tension, self, null)
+func propagate_instant_tension(t, source_node, delegate_wire):
+	if enabled:
+		# update tension with received INSTANT TENSION
+		DebugLogger.logme(self, "\nPropagating instant tension...")
+
+		if source_node != self && !(source_node in source_tensions): # ignore same-source loopbacks.
+			DebugLogger.logme(self, [
+				" > Received: ", Color(1,1,1),
+				logic.proper(t, "V", true), Color(1,0.2,0.2),
+				" from " + source_node.get_name(), Color(1,1,1),
+				" (" + str(source_node) + ")", Color(0.65,0.65,0.65)
+			])
+			if source_tensions.size() > 0:
+				logic.main.tooltip("SHORT CIRCUIT!!!!")
+				# UH OH.
+				# SHORT CIRCUIT!!
+				pass
+			source_tensions[source_node] = t
+
+		var wires_done = 0
+		for w in wires_list:
+			if !w.is_enabled():
+				DebugLogger.logme(self, "  > Wire is asleep!")
+			elif w != delegate_wire: # ignore the wire that literally just trasmitted us the tension.
+				var target_pin = w.get_B_from_A(self)
+				if !(source_node in target_pin.source_tensions):
+					if str(w.resistance) == "0": # ONLY propagate through ideal wires
+						DebugLogger.logme(self, [
+							"  > Sending: ", Color(1,1,1),
+							logic.proper(t, "V", true), Color(1,0.2,0.2),
+							" to " + target_pin.get_name(), Color(1,1,1),
+							" (" + str(target_pin) + ")", Color(0.65,0.65,0.65)
+						])
+						target_pin.propagate_instant_tension(t, source_node, w)
+						wires_done += 1
+		if wires_done == 0:
+			DebugLogger.logme(self, "No more perfect wires found!")
+func sum_up_instant_tensions():
+	if is_source:
+		return
+	DebugLogger.logme(self, "\n1) Summing up instant tensions...")
+	var overall_instant_tension = 0
+	for s in source_tensions:
+		overall_instant_tension += source_tensions[s]
+	if source_tensions.size() > 0:
+		tension = overall_instant_tension / source_tensions.size()
+	source_tensions = {}
 
 var capacitance = 0.00000000001
 var charge_stored = 0.0
@@ -329,6 +365,7 @@ func sum_up_charge_flows(delta):
 		])
 	pass
 
+var new_tension = null
 func volts_summ(V0, arr_V, only_in_flow = false):
 	var sum = 0
 	if only_in_flow:
@@ -405,26 +442,43 @@ func mystery_equation(V0, arr_V, arr_R, max_current):
 	var new_V0 = (rhs - max_current) / lhs
 	pass
 	return new_V0
-func equalize_current_flows(terminations, delta):
-	if !terminations:
-		var ww = wires_list.size()
-		if ww == 1:
-			return
-	elif terminations:
-		var ww = wires_list.size()
-		if ww != 1:
-			return
+func equalize_current_flows(delta):
+#	if !terminations:
+#		var ww = wires_list.size()
+#		if ww == 1:
+#			return
+#	elif terminations:
+#		var ww = wires_list.size()
+#		if ww != 1:
+#			return
 
 	if enabled && !is_source: # ignore sources
-		DebugLogger.logme(self, "\nEqualizing current flows...")
-
+		DebugLogger.logme(self, "\n2) Equalizing current flows...")
+		DebugLogger.logme(self, [
+			"Old tension: ", Color(1,1,1),
+			logic.proper(tension, "V ", true), Color(1,0.2,0.2)
+		])
 
 		var arr_V = []
 		var arr_R = []
-
 		var list = query_neighbors(QUERY_JUMP_OVER_WIRES)
-		if get_name() == "Node 4":
-			pass
+		var neighbors = list.size()
+		DebugLogger.logme(self, [
+			"Neighbors: ", Color(1,1,1),
+			neighbors, Color(1,1,1),
+		])
+#		for wentry in list:
+#			var w = wentry[0]
+#			var nn = w.get_B_from_A(wentry[1])
+		if neighbors == 0:
+			DebugLogger.logme(self, "No neighbors!")
+			return
+#		if neighbors == 1:
+#			DebugLogger.logme(self, "Dangling pin! Skipping...")
+#			return
+
+#		if get_name() == "Node 4":
+#			pass
 #		if get_name() == "Node 2":
 #			pass
 		for wentry in list:
@@ -441,52 +495,10 @@ func equalize_current_flows(terminations, delta):
 				" (" + str(nn) + ")", Color(0.65,0.65,0.65)
 			])
 
-#		for w in wires_list:
-#			if w.is_enabled() && str(w.resistance) != "0":
-#				var nn = w.get_B_from_A(self)
-#				arr_V.push_back(nn.tension)
-#				arr_R.push_back(w.resistance)
-#
-#				DebugLogger.logme(self, [
-#					"  > Resistor: ", Color(1,1,1),
-#					logic.proper(nn.tension, "V ", true), Color(1,0.2,0.2),
-#					logic.proper(w.resistance, "O. ", true), Color(1,0.5,0),
-#					logic.proper(w.current, "A ", true), Color(1,1,0),
-#					"> " + nn.get_name(), Color(1,1,1),
-#					" (" + str(nn) + ")", Color(0.65,0.65,0.65)
-#				])
+		var termination = false
+		if arr_V.size() == 1:
+			termination = true
 
-#			if w.is_enabled() && str(w.resistance) == "0":
-#				var nn = w.get_B_from_A(self)
-#				var tA = tension
-#				var tB = nn.tension
-#				var voltage = tB - tA
-#				DebugLogger.logme(self, [
-#					"  > Sending: ", Color(1,1,1),
-#					logic.proper(voltage, "V", true), Color(1,0.2,0.2),
-#					" to " + nn.get_name(), Color(1,1,1),
-#					" (" + str(nn) + ")", Color(0.65,0.65,0.65)
-#				])
-#				nn.add_tension_drop_from_neighbor(self, w, -voltage)
-
-
-#				arr_V.push_back(nn.tension)
-#				arr_R.push_back(0.1)
-#
-#				DebugLogger.logme(self, [
-#					"  > Wire: ", Color(1,1,1),
-#					logic.proper(nn.tension, "V ", true), Color(1,0.2,0.2),
-#					logic.proper(w.resistance, "O. ", true), Color(1,0.5,0),
-#					logic.proper(w.current, "A ", true), Color(1,1,0),
-#					"> " + nn.get_name(), Color(1,1,1),
-#					" (" + str(nn) + ")", Color(0.65,0.65,0.65)
-#				])
-#			if w.is_enabled():
-#				arr_V.push_back(w.get_B_from_A(self).tension)
-#				if w.resistance == 0:
-#					arr_R.push_back(1)
-#				else:
-#					arr_R.push_back(w.resistance)
 		if arr_V.size() > 0:
 			var vsum = volts_summ(tension, arr_V)
 			var csum = curr_summ(tension, arr_V, arr_R)
@@ -502,35 +514,29 @@ func equalize_current_flows(terminations, delta):
 			])
 
 			var new_V0 = mystery_equation(tension, arr_V, arr_R, 0)
+#			if termination && csum < 0:
+#				new_V0 = 0
 
-			if terminations && csum < 0:
-				new_V0 = 0
-#			else:
-#				tension = new_V0 # fingers crossed......
 			DebugLogger.logme(self, [
 				"New tension: ", Color(1,1,1),
 				logic.proper(new_V0, "V ", true), Color(1,0.2,0.2)
 			])
-			tension = new_V0 # fingers crossed......
+			new_tension = new_V0
+
 			DebugLogger.logme(self, [
 				"New total current: ", Color(1,1,1),
-				logic.proper(curr_summ(tension, arr_V, arr_R), "A ", true), Color(1,1,0)
+				logic.proper(curr_summ(new_tension, arr_V, arr_R), "A ", true), Color(1,1,0)
 			])
-
-#			if !terminations || max_c != 0:
-#				new_V0 = mystery_equation(tension, arr_V, arr_R, max_c)
-#				DebugLogger.logme(self, "Setting new tension...")
-#			else:
-#				new_V0 = tension
-#				DebugLogger.logme(self, "No charge flow available! Tension dropped to zero!")
-#				pass
-
-
 
 		var asdasdda = 34
 		pass
-	sum_up_instant_tensions() # this needs to be done here, *AFTER* calculating the pin's tension!!
+#	sum_up_instant_tensions() # this needs to be done here, *AFTER* calculating the pin's tension!!
 	pass
+func sum_up_new_tension():
+	if new_tension != null:
+		tension += (new_tension - tension) * 1.0
+		new_tension = null
+#	sum_up_instant_tensions()
 
 func _process(delta):
 	$L/Label.text = "_/_"

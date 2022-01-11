@@ -3,8 +3,8 @@ extends Node
 var probe = null
 var main = null
 
-var simulation_speed = 0.5
-var iteration_times = 1
+#var simulation_speed = 0.5
+#var iteration_times = 1
 var simulation_go = -1
 
 # temporary solution...
@@ -147,6 +147,16 @@ var circuits = {
 		}
 	}
 }
-var prefs = {
-	"lastcircuit": 1
+var prefs_defaults = {
+	"lastcircuit": 1,
+	"iteration_times": 1,
+	"simulation_speed": 0.5
 }
+var prefs = prefs_defaults
+func get_pref(pref):
+	if (!pref in prefs):
+		prefs[pref] = prefs_defaults[pref]
+	return prefs[pref]
+func set_pref(pref, v):
+	prefs[pref] = v
+	main.save_prefs()

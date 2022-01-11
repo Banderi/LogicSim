@@ -188,25 +188,15 @@ func add_freepin_node(a):
 			freepin.set(key, a[key])
 		if key != "position" && key in pin:
 			pin.set(key, a[key])
-#	freepin.position = a[1]
-#	if (a.size() > 3): # additional values
-#		pin.is_source = bool(a[2])
-#		pin.tension_static = float(a[3])
-#		pin.tension_amplitude = float(a[4]) if a.size() > 4 else 0
-#		pin.tension_speed = float(a[5]) if a.size() > 5 else 0
-#		pin.tension_phase = float(a[6]) if a.size() > 6 else 0
 
 	# node id info
 	freepin.node_type = -999
 	register_token(freepin, a.IDTOKEN)
-#	pin.node_token = a[0] # terminating pin node also has a token field...
 
 	nodes.add_child(freepin)
 	return pin
 func add_wire_based_node(type, a):
 	var newwire = WIRE.instance()
-#	var orig_pin = get_pin_from_token(a[1][0], a[1][1])
-#	var dest_pin = get_pin_from_token(a[2][0], a[2][1])
 	var orig_pin = get_pin_from_token_pair(a.conn_A)
 	var dest_pin = get_pin_from_token_pair(a.conn_B)
 	newwire.attach(orig_pin, dest_pin)
@@ -215,65 +205,6 @@ func add_wire_based_node(type, a):
 	for key in a:
 		if key in newwire:
 			newwire.set(key, a[key])
-
-#	var dummy_data = {
-#		"resistance": 0,
-#		"reactance": 0,
-#		"impedance": 0
-#	}
-#	var data = a[3] if a.size() > 3 else dummy_data
-#	if data == null:
-#		data = dummy_data
-#	newwire.impedance = null # reset impedance
-#
-#	if data is Array: # convert from old type of data format
-#		if data == []:
-#			data = dummy_data
-#		else:
-#			var ni = dummy_data
-#			if data.size() > 0:
-#				ni.resistance = data[0]
-#			if data.size() > 1:
-#				ni.reactance = data[1]
-#			if data.size() > 2:
-#				ni.impedance = data[2]
-#			data = ni
-
-#	# resistance
-#	if "resistance" in data:
-#		if str(data.resistance) == "inf":
-#			newwire.resistance = "inf"
-#			newwire.conductance = 0.0
-#			newwire.impedance = "inf"
-#		elif float(data.resistance) == 0.0:
-#			newwire.resistance = 0.0
-#			newwire.conductance = "inf"
-#			newwire.impedance = "inf"
-#		else:
-#			newwire.resistance = float(data.resistance)
-#			newwire.conductance = 1.0 / newwire.resistance
-#
-#	# reactance
-#	if "reactance" in data:
-#		if str(data.reactance) == "inf":
-#			newwire.reactance = "inf"
-#			newwire.reactance_inv = 0.0
-#			newwire.impedance = "inf"
-#		elif float(data.reactance) == 0.0:
-#			newwire.reactance = 0.0
-#			newwire.reactance_inv = "inf"
-#			newwire.impedance = "inf"
-#		else:
-#			newwire.reactance = float(data.reactance)
-#			newwire.reactance_inv = 1.0 / newwire.reactance
-#
-#	# impedance
-#	if newwire.impedance == null:
-#		newwire.impedance = sqrt(newwire.resistance * newwire.resistance + newwire.reactance * newwire.reactance)
-#
-#	# etc.
-#	newwire.capacitance = data.capacitance if "capacitance" in data else 0.0
-#	newwire.inductance = data.inductance if "inductance" in data else 0.0
 
 	# node id info
 	newwire.node_type = type
@@ -483,15 +414,13 @@ func _process(delta):
 			logic.simulation_go -= 1
 	if (logic.simulation_go != 0):
 
-		for n in range(0, logic.iteration_times):
+		for n in range(0, logic.get_pref("iteration_times")):
 			get_tree().call_group("graph", "debugger_log_clear")
 
 			# ATTEMPT ONE:
 #			get_tree().call_group("pins", "sum_up_instant_tensions")
 #			get_tree().call_group("wires", "equalize_instant_tensions")
 #			get_tree().call_group("wires", "equalize_voltage")
-#			get_tree().call_group("pins", "propagate", true)
-#			get_tree().call_group("pins", "sum_up_neighbor_tensions")
 			# TODO: this is a bit costly....
 #			get_tree().call_group("sources", "maintain_tension") # propagate SOURCE voltage through wires a second time.
 #			get_tree().call_group("pins", "sum_up_instant_tensions")
@@ -501,9 +430,25 @@ func _process(delta):
 
 			# ATTEMPT TWO: these SORTA work but also don't. >:(
 #			get_tree().call_group("pins", "sum_up_charge_flows", delta)
-			get_tree().call_group("sources", "maintain_tension") # TO REWRITE!!!!! <---- calculate ISLANDS of WIRES!!!
-			get_tree().call_group("pins", "equalize_current_flows", true, delta)
-			get_tree().call_group("pins", "equalize_current_flows", false, delta)
+			get_tree().call_group("sources", "maintain_tension")
+			get_tree().call_group("pins", "equalize_current_flows", delta)
+			get_tree().call_group("pins", "sum_up_new_tension")
+			get_tree().call_group("pins", "sum_up_instant_tensions")
+
+			# ATTEMPT THREE
+#			get_tree().call_group("sources", "maintain_tension")
+##			get_tree().call_group("pins", "sum_up_instant_tensions")
+##			get_tree().call_group("pins", "equalize_tensions")
+##			get_tree().call_group("pins", "sum_up_neighbor_tensions")
+#			get_tree().call_group("pins", "equalize_current_flows", delta)
+##			get_tree().call_group("pins", "sum_up_instant_tensions")
+#			get_tree().call_group("pins", "sum_up_new_tension")
+
+#			get_tree().call_group("pins", "equalize_tensions")
+#			get_tree().call_group("pins", "sum_up_neighbor_tensions")
+#			get_tree().call_group("sources", "maintain_tension")
+#			get_tree().call_group("pins", "sum_up_instant_tensions")
+
 			get_tree().call_group("wires", "update_material_properties")
 
 			# ATTEMPT THREE:
@@ -532,6 +477,7 @@ func _ready():
 		logic.prefs = {}
 	elif logic.prefs.has("lastcircuit"):
 		load_circuit(logic.prefs.lastcircuit)
+	$HUD/graph/Control/iterations.text = "iterat. : " + str(logic.get_pref("iteration_times"))
 
 	# load in the value editor boxes
 	node_options = {
@@ -610,7 +556,7 @@ func buildmode_push_stage(pin):
 					buildmode_last_pin = buildmode_add_wire(pin)
 				-997: # RESISTOR
 					buildmode_last_pin = buildmode_add_wire(pin, {
-						"resistance": 500,
+						"resistance": 1000,
 						"reactance": 0,
 						"impedance": 0
 					})
@@ -876,19 +822,19 @@ func _on_btn_zoomy_less_pressed():
 func _on_btn_zoomy_more_pressed():
 	logic.probe.zoom_ver(1, self)
 func _on_btn_iter_less_pressed():
-	var i = logic.available_iteration_times_temp.find(logic.iteration_times)
+	var i = logic.available_iteration_times_temp.find(logic.get_pref("iteration_times"))
 	i -= 1
 	if i < 0:
 		i = 0
-	logic.iteration_times = logic.available_iteration_times_temp[i]
-	$HUD/graph/Control/iterations.text = "iterat. : " + str(logic.iteration_times)
+	logic.set_pref("iteration_times", logic.available_iteration_times_temp[i])
+	$HUD/graph/Control/iterations.text = "iterat. : " + str(logic.get_pref("iteration_times"))
 func _on_btn_iter_more_pressed():
-	var i = logic.available_iteration_times_temp.find(logic.iteration_times)
+	var i = logic.available_iteration_times_temp.find(logic.get_pref("iteration_times"))
 	i += 1
 	if i > logic.available_iteration_times_temp.size() - 1:
 		i = logic.available_iteration_times_temp.size() - 1
-	logic.iteration_times = logic.available_iteration_times_temp[i]
-	$HUD/graph/Control/iterations.text = "iterat. : " + str(logic.iteration_times)
+	logic.set_pref("iteration_times", logic.available_iteration_times_temp[i])
+	$HUD/graph/Control/iterations.text = "iterat. : " + str(logic.get_pref("iteration_times"))
 
 ###
 
