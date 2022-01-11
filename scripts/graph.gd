@@ -67,6 +67,7 @@ func detach():
 	probing = null
 	probing_type = null
 	logic.main.node_options.root.visible = false
+	data = []
 	DebugLogger.clear()
 
 var label_n = 9

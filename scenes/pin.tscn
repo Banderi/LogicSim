@@ -17,14 +17,30 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
+[node name="ColorRect" type="ColorRect" parent="."]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+margin_left = 0.905716
+margin_top = -3.35849
+margin_right = 16.9057
+margin_bottom = 12.6415
+color = Color( 1, 0.796078, 0, 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
 [node name="L" type="Node2D" parent="."]
 position = Vector2( -29.3696, -30.5445 )
 z_index = 3
 z_as_relative = false
 
 [node name="Label" type="Label" parent="L"]
+margin_top = -0.35849
 margin_right = 58.0
-margin_bottom = 20.0
+margin_bottom = 19.6415
 custom_fonts/font = ExtResource( 2 )
 text = "_/_"
 align = 1

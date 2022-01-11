@@ -13,7 +13,8 @@ func update_node_data(pin):
 		"tension_static": pin.tension_static,
 		"tension_amplitude": pin.tension_amplitude,
 		"tension_speed": pin.tension_speed,
-		"tension_phase": pin.tension_phase
+		"tension_phase": pin.tension_phase,
+		"enabled": pin.enabled
 	}
 	logic.main.update_node_data(node_token, data)
 

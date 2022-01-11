@@ -193,7 +193,7 @@ func cleanup_tensions():
 var source_tensions = {}
 func maintain_tension(): # actual source of tension!
 	if is_source:
-		DebugLogger.logme(self, "\n2) Updating SOURCE TENSION")
+		DebugLogger.logme(self, "\n1) Updating SOURCE TENSION")
 		tension = tension_static + 2 * tension_amplitude * sin(tension_phase * PI / 180)
 
 		# update tension phase
@@ -208,10 +208,14 @@ func maintain_tension(): # actual source of tension!
 
 		# 2nd propagation loop, JUST for SOURCES
 		propagate_instant_tension(tension, self, null)
+func propagate_active_tensions():
+	if !enabled || !is_source:
+		return
+
 func propagate_instant_tension(t, source_node, delegate_wire):
 	if enabled:
 		# update tension with received INSTANT TENSION
-		DebugLogger.logme(self, "\nPropagating instant tension...")
+		DebugLogger.logme(self, "\n2) Propagating instant tension...")
 
 		if source_node != self && !(source_node in source_tensions): # ignore same-source loopbacks.
 			DebugLogger.logme(self, [
@@ -248,7 +252,7 @@ func propagate_instant_tension(t, source_node, delegate_wire):
 func sum_up_instant_tensions():
 	if is_source:
 		return
-	DebugLogger.logme(self, "\n1) Summing up instant tensions...")
+	DebugLogger.logme(self, "\n3) Summing up instant tensions...")
 	var overall_instant_tension = 0
 	for s in source_tensions:
 		overall_instant_tension += source_tensions[s]
@@ -365,7 +369,17 @@ func sum_up_charge_flows(delta):
 		])
 	pass
 
+var is_dangling = true
+func is_part_of_loop():
+	if is_source:
+		is_dangling = false
+#	is_dangling = true
+	$ColorRect.visible = is_dangling
+#	$ColorRect.visible = false
+
 var new_tension = null
+var total_voltages_in_out = 0
+var total_currents_in_out = 0
 func volts_summ(V0, arr_V, only_in_flow = false):
 	var sum = 0
 	if only_in_flow:
@@ -453,7 +467,7 @@ func equalize_current_flows(delta):
 #			return
 
 	if enabled && !is_source: # ignore sources
-		DebugLogger.logme(self, "\n2) Equalizing current flows...")
+		DebugLogger.logme(self, "\n1) Equalizing current flows...")
 		DebugLogger.logme(self, [
 			"Old tension: ", Color(1,1,1),
 			logic.proper(tension, "V ", true), Color(1,0.2,0.2)
@@ -500,8 +514,8 @@ func equalize_current_flows(delta):
 			termination = true
 
 		if arr_V.size() > 0:
-			var vsum = volts_summ(tension, arr_V)
-			var csum = curr_summ(tension, arr_V, arr_R)
+			total_voltages_in_out = volts_summ(tension, arr_V)
+			total_currents_in_out = curr_summ(tension, arr_V, arr_R)
 #			var max_in = get_max_current_in(delta, vsum) # this is POSITIVE
 #			var max_out = get_max_current_out(delta) # this is NEGATIVE
 #			max_in = 0
@@ -517,11 +531,20 @@ func equalize_current_flows(delta):
 #			if termination && csum < 0:
 #				new_V0 = 0
 
+
 			DebugLogger.logme(self, [
 				"New tension: ", Color(1,1,1),
 				logic.proper(new_V0, "V ", true), Color(1,0.2,0.2)
 			])
 			new_tension = new_V0
+
+			is_dangling = false
+			var neighbor_tensions = neighboring_tensions()
+			var tension_diff = (new_tension - neighbor_tensions)
+			DebugLogger.logme(self, [
+				"Tension DIFFERENCE: ", Color(1,1,1),
+				logic.proper(tension_diff, "V ", true), Color(1,0.2,0.2)
+			])
 
 			DebugLogger.logme(self, [
 				"New total current: ", Color(1,1,1),
@@ -532,11 +555,52 @@ func equalize_current_flows(delta):
 		pass
 #	sum_up_instant_tensions() # this needs to be done here, *AFTER* calculating the pin's tension!!
 	pass
+func neighboring_tensions():
+	var wlist = query_neighbors(QUERY_JUMP_OVER_WIRES)
+	var neighbors = wlist.size()
+	if neighbors == 0:
+		return 0.0
+	var total = 0
+	for wentry in wlist:
+		var w = wentry[0]
+		var nn = w.get_B_from_A(wentry[1])
+		total += tension
+		pass
+	total = total / neighbors
+	return total
+func voltages_in_out(wlist):
+	var total = 0
+	for wentry in wlist:
+		var w = wentry[0]
+		var nn = w.get_B_from_A(wentry[1])
+		total += tension - nn.tension
+		pass
+	return total
+func currents_in_out(wlist):
+	var total = 0
+	for wentry in wlist:
+		var w = wentry[0]
+		total += w.get_current_from_A(wentry[1])
+		pass
+	return total
+func update_total_in_out():
+	var wlist = query_neighbors(QUERY_JUMP_OVER_WIRES)
+	total_voltages_in_out = voltages_in_out(wlist)
+	total_currents_in_out = currents_in_out(wlist)
+	DebugLogger.logme(self, [
+		"VOLTAGES IN/OUT: ", Color(1,1,1),
+		logic.proper(total_voltages_in_out, "V ", true), Color(1,0.2,0.2)
+	])
+	DebugLogger.logme(self, [
+		"CURRENTS IN/OUT: ", Color(1,1,1),
+		logic.proper(total_currents_in_out, "A ", true), Color(1,1,0)
+	])
 func sum_up_new_tension():
 	if new_tension != null:
 		tension += (new_tension - tension) * 1.0
 		new_tension = null
 #	sum_up_instant_tensions()
+	update_total_in_out()
 
 func _process(delta):
 	$L/Label.text = "_/_"
@@ -583,7 +647,7 @@ func _input(event):
 				owner_node.position = orig_position + (event.position - logic.main.click_origin.left) * logic.main.camera.zoom
 
 				# grid snapping!
-				if logic.main.selection_mode & 2:
+				if !(logic.main.selection_mode & 2):
 					var rx = round(owner_node.position.x / 50.0) * 50.0
 					var ry = round(owner_node.position.y / 50.0) * 50.0
 					owner_node.position = Vector2(rx, ry)
@@ -602,6 +666,7 @@ func _input(event):
 		elif logic.main.buildmode_stage == null:
 			if Input.is_action_just_released("mouse_left"):
 				enabled = !enabled
+				update_node_data()
 			if Input.is_action_just_released("mouse_right"):
 				logic.probe.attach(self, 0)
 

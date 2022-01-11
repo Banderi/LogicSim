@@ -36,6 +36,34 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
+[node name="bg2" type="ColorRect" parent="wire/bg"]
+visible = false
+anchor_top = 0.5
+anchor_bottom = 0.5
+margin_top = -7.0
+margin_right = 0.25
+margin_bottom = 7.0
+mouse_filter = 1
+color = Color( 0.14902, 1, 0, 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="bg3" type="ColorRect" parent="wire/bg"]
+visible = false
+anchor_top = 0.5
+anchor_bottom = 0.5
+margin_left = 0.5
+margin_top = 7.0
+margin_right = 0.75
+margin_bottom = 21.0
+rect_rotation = 180.0
+mouse_filter = 1
+color = Color( 1, 0.294118, 0.972549, 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
 [node name="Line2D" type="Line2D" parent="."]
 z_index = -1
 points = PoolVector2Array( 269.323, 430.43, 532.711, 608.137, 807.205, 230.509, 1170.55, 663.671 )
@@ -69,3 +97,7 @@ __meta__ = {
 
 [connection signal="mouse_entered" from="wire/bg/bg" to="." method="_on_bg_mouse_entered"]
 [connection signal="mouse_exited" from="wire/bg/bg" to="." method="_on_bg_mouse_exited"]
+[connection signal="mouse_entered" from="wire/bg/bg2" to="." method="_on_bg_mouse_entered"]
+[connection signal="mouse_exited" from="wire/bg/bg2" to="." method="_on_bg_mouse_exited"]
+[connection signal="mouse_entered" from="wire/bg/bg3" to="." method="_on_bg_mouse_entered"]
+[connection signal="mouse_exited" from="wire/bg/bg3" to="." method="_on_bg_mouse_exited"]

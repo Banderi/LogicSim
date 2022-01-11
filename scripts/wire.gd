@@ -87,29 +87,51 @@ func draw_dashed_line(from, to, color, width, dash_length = 5, gap = 2.5, antial
 func is_enabled():
 	return orig_pin.enabled && dest_pin.enabled
 
+var active_tensions_A = []
+var active_tensions_B = []
+func add_active_tension(pin, t):
+	if pin == orig_pin:
+		active_tensions_A.push_back(t)
+	elif pin == dest_pin:
+		active_tensions_B.push_back(t)
+func sum_up_active_tensions():
+	if active_tensions_A.size() > 0:
+		$wire/bg/bg2.visible = true
+	else:
+		$wire/bg/bg2.visible = false
+	if active_tensions_B.size() > 0:
+		$wire/bg/bg3.visible = true
+	else:
+		$wire/bg/bg3.visible = false
+	active_tensions_A = []
+	active_tensions_B = []
+
 var r_bar = 0.99
-func query_tension_drop_coeff(source, dest, tA, tB):
-#	DebugLogger.clearme(self)
-#	DebugLogger.logme(self, [
-#		get_name(), Color(1,1,1),
-#		" (" + str(self) + ")", Color(0.65,0.65,0.65)
-#	])
-#	var v = tB - tA # this is when there is ZERO resistence.
-#	if resistance == 500:
-#		return 1.06
-#	if resistance > 0:
-#		voltage = voltage / (resistance)
-#	else:
-#		voltage = voltage
-
-#	if str(conductance) != "inf":
-#		voltage = voltage * 0.01
-
-#	DebugLogger.logme(self, [
-#		"\nVoltage query: ", Color(1,1,1),
-#		logic.proper(v, "V", true), Color(1,0.2,0.2)
-#	])
-	return 1.0
+func update_voltage_and_current():
+	if !dest_pin.enabled || !orig_pin.enabled:
+		voltage = 0
+		current = 0
+		return
+	voltage = orig_pin.tension - dest_pin.tension
+	if str(resistance) == "inf":
+		current = 0.0
+	elif resistance == 0:
+		if voltage < 0:
+			current = "inf"
+		elif voltage > 0:
+			current = "-inf"
+		else:
+			current = 0.0
+	else:
+		current = voltage / resistance
+		if abs(current) < 0.000000000001:
+			current = 0
+func get_current_from_A(A):
+	update_voltage_and_current()
+	if A == orig_pin:
+		return current
+	else:
+		return -current
 func equalize_voltage():
 	if !orig_pin.enabled || !dest_pin.enabled:
 		return
@@ -118,7 +140,8 @@ func equalize_voltage():
 	DebugLogger.logme(self, "\nEqualizing tensions...")
 	var v = orig_pin.tension - dest_pin.tension
 
-	var forward_coeff = query_tension_drop_coeff(null, null, orig_pin.tension, dest_pin.tension)
+#	var forward_coeff = query_tension_drop_coeff(null, null, orig_pin.tension, dest_pin.tension)
+	var forward_coeff = 1.0
 	var backward_coeff = (-2 + forward_coeff)
 
 #	if resistance == 500:
@@ -155,26 +178,27 @@ func update_material_properties():
 	refresh_impedences("resistance")
 
 	# update voltage and current
-	voltage = orig_pin.tension - dest_pin.tension
-	if str(conductance) == "inf" && dest_pin.enabled && orig_pin.enabled:
-		if abs(voltage) > 0.000001:
-			if voltage > 0:
-				current = "inf"
-			else:
-				current = "-inf"
-		else:
-			current = 0
-#		elif orig_pin.tension != orig_pin.oldtension || dest_pin.tension != dest_pin.oldtension:
-#			current = "inf" # TODO: figure out direction? not really a priority though...
+	update_voltage_and_current()
+#	voltage = orig_pin.tension - dest_pin.tension
+#	if str(conductance) == "inf" && dest_pin.enabled && orig_pin.enabled:
+#		if abs(voltage) > 0.000001:
+#			if voltage > 0:
+#				current = "inf"
+#			else:
+#				current = "-inf"
 #		else:
 #			current = 0
-	else:
-		var cond_coeff = conductance
-		if !dest_pin.enabled || !orig_pin.enabled:
-			cond_coeff = 0
-		current = voltage * cond_coeff
-		if abs(current) < 0.000000000001:
-			current = 0
+##		elif orig_pin.tension != orig_pin.oldtension || dest_pin.tension != dest_pin.oldtension:
+##			current = "inf" # TODO: figure out direction? not really a priority though...
+##		else:
+##			current = 0
+#	else:
+#		var cond_coeff = conductance
+#		if !dest_pin.enabled || !orig_pin.enabled:
+#			cond_coeff = 0
+#		current = voltage * cond_coeff
+#		if abs(current) < 0.000000000001:
+#			current = 0
 
 #	$L/Label.text = str(stepify(abs(current),0.001)) + "A"
 	if focused:

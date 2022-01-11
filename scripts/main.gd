@@ -430,24 +430,22 @@ func _process(delta):
 
 			# ATTEMPT TWO: these SORTA work but also don't. >:(
 #			get_tree().call_group("pins", "sum_up_charge_flows", delta)
-			get_tree().call_group("sources", "maintain_tension")
-			get_tree().call_group("pins", "equalize_current_flows", delta)
-			get_tree().call_group("pins", "sum_up_new_tension")
-			get_tree().call_group("pins", "sum_up_instant_tensions")
+#			get_tree().call_group("sources", "maintain_tension")
+#			get_tree().call_group("pins", "equalize_current_flows", delta)
+#			get_tree().call_group("pins", "sum_up_new_tension")
+#			get_tree().call_group("pins", "sum_up_instant_tensions")
+
+
 
 			# ATTEMPT THREE
 #			get_tree().call_group("sources", "maintain_tension")
-##			get_tree().call_group("pins", "sum_up_instant_tensions")
-##			get_tree().call_group("pins", "equalize_tensions")
-##			get_tree().call_group("pins", "sum_up_neighbor_tensions")
-#			get_tree().call_group("pins", "equalize_current_flows", delta)
-##			get_tree().call_group("pins", "sum_up_instant_tensions")
 #			get_tree().call_group("pins", "sum_up_new_tension")
-
-#			get_tree().call_group("pins", "equalize_tensions")
-#			get_tree().call_group("pins", "sum_up_neighbor_tensions")
-#			get_tree().call_group("sources", "maintain_tension")
-#			get_tree().call_group("pins", "sum_up_instant_tensions")
+			get_tree().call_group("sources", "maintain_tension")
+			get_tree().call_group("sources", "propagate_active_tensions")
+			get_tree().call_group("pins", "equalize_current_flows", delta)
+			get_tree().call_group("pins", "is_part_of_loop")
+			get_tree().call_group("pins", "sum_up_new_tension")
+			get_tree().call_group("pins", "sum_up_instant_tensions")
 
 			get_tree().call_group("wires", "update_material_properties")
 
@@ -728,10 +726,10 @@ func _input(event):
 		local_event_drag_corrected = get_global_mouse_position() # update cursor position pointer
 		camera_pos_mouse_diff = camera.position - local_event_drag_corrected
 
-		if selection_mode & 2: # snap to grid!
+		if !(selection_mode & 2): # snap to grid!
 			local_event_drag_corrected.x = round(local_event_drag_corrected.x / 50.0) * 50.0
 			local_event_drag_corrected.y = round(local_event_drag_corrected.y / 50.0) * 50.0
-		elif drag_button & 2 || (selection_mode & 8 && drag_button != 0): # drag camera around
+		if drag_button & 2 || (selection_mode & 8 && drag_button != 0): # drag camera around
 
 			# determine which button was pressed
 			var orig_drag_point = null
