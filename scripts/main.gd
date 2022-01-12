@@ -120,7 +120,7 @@ func get_pin_from_token(token, p):
 func get_pin_from_token_pair(pair):
 	return get_pin_from_token(pair[0], pair[1])
 func generate_new_token():
-	for token in range(0, 99):
+	for token in range(0, 99999999):
 		if !node_token_list.has(token):
 			return token
 	return null # oh no, out of space!
@@ -153,7 +153,11 @@ func add_circuit_node(type, data): # needed for in-game circuit spawn
 	if data is Array: # OLD FORMAT
 		data = convert_circuit_old_data_format(type, data)
 	if !("IDTOKEN" in data):
-		data["IDTOKEN"] = generate_new_token()
+		var tok = generate_new_token()
+		if tok == null:
+			tooltip("Out of memory!")
+			return null
+		data["IDTOKEN"] = tok
 
 	match type:
 		-999:
@@ -441,7 +445,7 @@ func _process(delta):
 #			get_tree().call_group("sources", "maintain_tension")
 #			get_tree().call_group("pins", "sum_up_new_tension")
 			get_tree().call_group("sources", "maintain_tension")
-			get_tree().call_group("sources", "propagate_active_tensions")
+#			get_tree().call_group("sources", "active_tension_loop_propagation")
 			get_tree().call_group("pins", "equalize_current_flows", delta)
 			get_tree().call_group("pins", "is_part_of_loop")
 			get_tree().call_group("pins", "sum_up_new_tension")
@@ -537,8 +541,12 @@ func buildmode_push_stage(pin):
 						if pin != null: # existing destination pin
 							tooltip("You can't overlap pins!")
 						else:
+							var tok = generate_new_token()
+							if tok == null:
+								tooltip("Out of memory!")
+								return null
 							add_circuit_node(-999, [
-								generate_new_token(),
+								tok,
 								local_event_drag_corrected,
 								0
 							])
@@ -559,10 +567,14 @@ func buildmode_push_stage(pin):
 						"impedance": 0
 					})
 
-func buildmode_add_wire(pin, data = null):
+func buildmode_add_wire(pin, data = {}):
 	if buildmode_last_pin == null: # no existing starting pin? create a new one!
+		var tok = generate_new_token()
+		if tok == null:
+			tooltip("Out of memory!")
+			return null
 		buildmode_last_pin = add_circuit_node(-999, [
-			generate_new_token(),
+			tok,
 			buildmode_last_emptyspace_position,
 			0
 		])
@@ -572,19 +584,25 @@ func buildmode_add_wire(pin, data = null):
 			tooltip("You can't overlap wires!")
 			return buildmode_last_pin
 	else: # new destination pin!
-		pin = add_circuit_node(-999, [
-			generate_new_token(),
-			local_event_drag_corrected,
-			0
-		])
+		var tok = generate_new_token()
+		if tok == null:
+			tooltip("Out of memory!")
+			return null
+		pin = add_circuit_node(-999, {
+			"IDTOKEN": tok,
+			"position": local_event_drag_corrected,
+			"tension_static": 0
+		})
 
 	# finalize: add wire between pins!
-	add_circuit_node(-998, [
-		generate_new_token(),
-		[buildmode_last_pin.get_parent().get_parent().node_token, 0],
-		[pin.get_parent().get_parent().node_token, 0],
-		data
-	])
+	var tok = generate_new_token()
+	if tok == null:
+		tooltip("Out of memory!")
+		return null
+	data["IDTOKEN"] = tok
+	data["conn_A"] = [buildmode_last_pin.get_parent().get_parent().node_token, 0]
+	data["conn_B"] = [pin.get_parent().get_parent().node_token, 0]
+	add_circuit_node(-998, data)
 
 	# return the last destination pin to become the new starting pin!
 	return pin
@@ -694,7 +712,7 @@ func _input(event):
 #		logic.probe.detach()
 
 	if buildmode_stage != null:
-		if Input.is_action_just_released("mouse_right"): # canel!!
+		if Input.is_action_just_released("mouse_right"): # cancel!!
 			buildmode_terminate()
 		if buildmode_circuit_type == null: # deleting!!
 			if Input.is_action_just_released("mouse_left") && node_selection != null:
@@ -726,7 +744,7 @@ func _input(event):
 		local_event_drag_corrected = get_global_mouse_position() # update cursor position pointer
 		camera_pos_mouse_diff = camera.position - local_event_drag_corrected
 
-		if !(selection_mode & 2): # snap to grid!
+		if !(selection_mode & 2) && buildmode_circuit_type != null: # snap to grid!
 			local_event_drag_corrected.x = round(local_event_drag_corrected.x / 50.0) * 50.0
 			local_event_drag_corrected.y = round(local_event_drag_corrected.y / 50.0) * 50.0
 		if drag_button & 2 || (selection_mode & 8 && drag_button != 0): # drag camera around

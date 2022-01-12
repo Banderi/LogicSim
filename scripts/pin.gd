@@ -208,9 +208,13 @@ func maintain_tension(): # actual source of tension!
 
 		# 2nd propagation loop, JUST for SOURCES
 		propagate_instant_tension(tension, self, null)
-func propagate_active_tensions():
+func active_tension_loop_propagation():
 	if !enabled || !is_source:
 		return
+	var wlist = query_neighbors(QUERY_JUMP_OVER_WIRES)
+	for wentry in wlist:
+		var w = wentry[0]
+		w.propagate_active_tension_from_A(wentry[1], tension_static)
 
 func propagate_instant_tension(t, source_node, delegate_wire):
 	if enabled:
@@ -575,14 +579,14 @@ func voltages_in_out(wlist):
 		var nn = w.get_B_from_A(wentry[1])
 		total += tension - nn.tension
 		pass
-	return total
+	return -total
 func currents_in_out(wlist):
 	var total = 0
 	for wentry in wlist:
 		var w = wentry[0]
 		total += w.get_current_from_A(wentry[1])
 		pass
-	return total
+	return -total
 func update_total_in_out():
 	var wlist = query_neighbors(QUERY_JUMP_OVER_WIRES)
 	total_voltages_in_out = voltages_in_out(wlist)

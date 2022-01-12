@@ -87,24 +87,28 @@ func draw_dashed_line(from, to, color, width, dash_length = 5, gap = 2.5, antial
 func is_enabled():
 	return orig_pin.enabled && dest_pin.enabled
 
-var active_tensions_A = []
-var active_tensions_B = []
-func add_active_tension(pin, t):
-	if pin == orig_pin:
-		active_tensions_A.push_back(t)
-	elif pin == dest_pin:
-		active_tensions_B.push_back(t)
+var is_dangling = false
+var active_tensions_orig = []
+var active_tensions_dest = []
+func propagate_active_tension_from_A(A, t):
+
+	pass
+func add_active_tension(A, t):
+	if A == orig_pin:
+		active_tensions_orig.push_back(t)
+	elif A == dest_pin:
+		active_tensions_dest.push_back(t)
 func sum_up_active_tensions():
-	if active_tensions_A.size() > 0:
+	if active_tensions_orig.size() > 0:
 		$wire/bg/bg2.visible = true
 	else:
 		$wire/bg/bg2.visible = false
-	if active_tensions_B.size() > 0:
+	if active_tensions_dest.size() > 0:
 		$wire/bg/bg3.visible = true
 	else:
 		$wire/bg/bg3.visible = false
-	active_tensions_A = []
-	active_tensions_B = []
+	active_tensions_orig = []
+	active_tensions_dest = []
 
 var r_bar = 0.99
 func update_voltage_and_current():
