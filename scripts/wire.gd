@@ -88,27 +88,103 @@ func is_enabled():
 	return orig_pin.enabled && dest_pin.enabled
 
 var is_dangling = false
-var active_tensions_orig = []
-var active_tensions_dest = []
-func propagate_active_tension_from_A(A, t):
+func magic_matrix(inv_resistance, sigmaA_invs, sigmaB_invs, sigmaA_ratios, sigmaB_ratios):
+	# these are "row-major" but actually, they are stored
+	# column-wise compared to classic math matrices.
+	# also, the rows are from TOP to BOTTOM.
+	var A = Basis()
+	A.x = Vector3(inv_resistance, -sigmaA_invs, 0) # <--- this is the FIRST COLUMN, rows from 1 to 3
+	A.y = Vector3(-inv_resistance, 0, sigmaB_invs) # <--- this is the SECOND COLUMN, rows from 1 to 3
+	A.z = Vector3(-1, -1, -1)					   # <--- this is the THIRD COLUMN, rows from 1 to 3
+	var B = Vector3(0, -sigmaA_ratios, sigmaB_ratios)
+	if A.determinant() == 0:
+		return null
+	var Ai = A.inverse()
+	var S = Ai * B
+	return S
+func equalize_current_flows(delta):
+	if !is_enabled():
+		return
+	if str(resistance) == "inf":
+		pass # deal with these later...
+	elif str(resistance) == "0":
+#		var wlist = orig_pin.query_neighbors(orig_pin.QUERY_ONLY_PERFECT_WIRES)
+#		if wlist.size() != 0:
+#			var node_tension = orig_pin.tension
+#			for wentry in wlist:
+#				var w = wentry[0]
+#				var pin = get_B_from_A(wentry[1])
+#				node_tension += pin.tension
+#			node_tension = node_tension / (wlist.size() + 1)
+#			if !orig_pin.is_source:
+#				orig_pin.tension = node_tension
+#			if !dest_pin.is_source:
+#				dest_pin.tension = node_tension
+		pass # deal with these later...
+	else:
+		var wA = orig_pin.query_neighbors(orig_pin.QUERY_JUMP_OVER_WIRES, [dest_pin])
+		var wB = dest_pin.query_neighbors(dest_pin.QUERY_JUMP_OVER_WIRES, [orig_pin])
+		if wA.size() > 0 && wB.size() > 0:
+			var inv_resistance = conductance
 
+			var sigmaA_invs = 0
+			var sigmaA_ratios = 0
+			for wentry in wA:
+				var w = wentry[0]
+				if wentry[0] != self:
+					var pin = get_B_from_A(wentry[1])
+					if str(w.resistance) == "inf":
+						pass # deal with these later...
+					else:
+						sigmaA_invs += w.conductance
+						sigmaA_ratios += w.voltage * w.conductance
+
+			var sigmaB_invs = 0
+			var sigmaB_ratios = 0
+			for wentry in wB:
+				var w = wentry[0]
+				if wentry[0] != self:
+					var pin = get_B_from_A(wentry[1])
+					if str(w.resistance) == "inf":
+						pass # deal with these later...
+					else:
+						sigmaB_invs += w.conductance
+						sigmaB_ratios += w.voltage * w.conductance
+
+			var s = magic_matrix(inv_resistance, sigmaA_invs, sigmaB_invs, sigmaA_ratios, sigmaB_ratios)
+			if s != null:
+				if !orig_pin.is_source:
+					orig_pin.tension = s.x
+				if !dest_pin.is_source:
+					dest_pin.tension = s.y
+			else:
+				var tt = (orig_pin.tension + dest_pin.tension) / 2
+				if !orig_pin.is_source:
+					orig_pin.tension = tt
+				if !dest_pin.is_source:
+					dest_pin.tension = tt
+		elif wA.size() > 0:
+			orig_pin.equalize_current_flows(delta)
+			if !dest_pin.is_source:
+				dest_pin.tension = orig_pin.tension
+			pass
+		elif wB.size() > 0:
+			dest_pin.equalize_current_flows(delta)
+			if !orig_pin.is_source:
+				orig_pin.tension = dest_pin.tension
+			pass
+		else:
+			if orig_pin.is_source && !dest_pin.is_source:
+				dest_pin.tension = orig_pin.tension
+			elif !orig_pin.is_source && dest_pin.is_source:
+				orig_pin.tension = dest_pin.tension
+			elif !orig_pin.is_source && !dest_pin.is_source:
+				var tt = (orig_pin.tension + dest_pin.tension) / 2
+				orig_pin.tension = tt
+				dest_pin.tension = tt
+			pass
+#		var s = magic_matrix(0.002, 0.00183333333333, 0.018333333333333, 0.013, -0.09)
 	pass
-func add_active_tension(A, t):
-	if A == orig_pin:
-		active_tensions_orig.push_back(t)
-	elif A == dest_pin:
-		active_tensions_dest.push_back(t)
-func sum_up_active_tensions():
-	if active_tensions_orig.size() > 0:
-		$wire/bg/bg2.visible = true
-	else:
-		$wire/bg/bg2.visible = false
-	if active_tensions_dest.size() > 0:
-		$wire/bg/bg3.visible = true
-	else:
-		$wire/bg/bg3.visible = false
-	active_tensions_orig = []
-	active_tensions_dest = []
 
 var r_bar = 0.99
 func update_voltage_and_current():

@@ -269,6 +269,7 @@ func save_circuit(n):
 	print("saving circuit " + str(n))
 	logic.circuits[n] = circuitdata
 	save_database() # on circuit save, serialize as well
+	logic.set_pref("lastcircuit", n)
 func load_circuit(n):
 	if n == null:
 		unload_circuit()
@@ -294,9 +295,7 @@ func load_circuit(n):
 		var list_of_such = to_load_from["circuits"][id]
 		for data in list_of_such:
 			add_circuit_node(id, data)
-
-	logic.prefs["lastcircuit"] = n
-	save_prefs()
+	logic.set_pref("lastcircuit", n)
 func delete_circuit(n):
 	if !logic.circuits.has(n):
 		return # invalid slot!
@@ -439,17 +438,22 @@ func _process(delta):
 #			get_tree().call_group("pins", "sum_up_new_tension")
 #			get_tree().call_group("pins", "sum_up_instant_tensions")
 
-
-
 			# ATTEMPT THREE
 #			get_tree().call_group("sources", "maintain_tension")
+#			get_tree().call_group("pins", "sum_up_instant_tensions")
+#			get_tree().call_group("pins", "equalize_current_flows", delta)
+##			get_tree().call_group("pins", "is_part_of_loop")
 #			get_tree().call_group("pins", "sum_up_new_tension")
+#			get_tree().call_group("pins", "sum_up_instant_tensions")
+
+			# ATTEMPT FOUR
 			get_tree().call_group("sources", "maintain_tension")
-#			get_tree().call_group("sources", "active_tension_loop_propagation")
-			get_tree().call_group("pins", "equalize_current_flows", delta)
-			get_tree().call_group("pins", "is_part_of_loop")
-			get_tree().call_group("pins", "sum_up_new_tension")
-			get_tree().call_group("pins", "sum_up_instant_tensions")
+#			get_tree().call_group("pins", "sum_up_instant_tensions")
+#			get_tree().call_group("pins", "equalize_current_flows", delta)
+			get_tree().call_group("wires", "equalize_current_flows", delta)
+#			get_tree().call_group("pins", "is_part_of_loop")
+#			get_tree().call_group("pins", "sum_up_new_tension")
+#			get_tree().call_group("pins", "sum_up_instant_tensions")
 
 			get_tree().call_group("wires", "update_material_properties")
 
@@ -559,7 +563,11 @@ func buildmode_push_stage(pin):
 		1:
 			match buildmode_circuit_type:
 				-998: # SIMPLE WIRE
-					buildmode_last_pin = buildmode_add_wire(pin)
+					buildmode_last_pin = buildmode_add_wire(pin, {
+						"resistance": 0,
+						"reactance": 0,
+						"impedance": 0
+					})
 				-997: # RESISTOR
 					buildmode_last_pin = buildmode_add_wire(pin, {
 						"resistance": 1000,

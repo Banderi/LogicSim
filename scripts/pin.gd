@@ -82,7 +82,9 @@ func query_neighbors(query_method, ignore_pins = [], depth = 0):
 			for w in wires_list:
 				if str(w.resistance) != "0":
 					if w.is_enabled():
-						arr.push_back([w, self])
+						var next_pin = w.get_B_from_A(self)
+						if !(next_pin in ignore_pins):
+							arr.push_back([w, self])
 				else: # perfect wire!
 					if w.is_enabled():
 						ignore_pins.push_back(self)
@@ -373,13 +375,13 @@ func sum_up_charge_flows(delta):
 		])
 	pass
 
-var is_dangling = true
-func is_part_of_loop():
-	if is_source:
-		is_dangling = false
-#	is_dangling = true
-	$ColorRect.visible = is_dangling
-#	$ColorRect.visible = false
+#var is_dangling = true
+#func is_part_of_loop():
+#	if is_source:
+#		is_dangling = false
+##	is_dangling = true
+#	$ColorRect.visible = is_dangling
+##	$ColorRect.visible = false
 
 var new_tension = null
 var total_voltages_in_out = 0
@@ -542,7 +544,7 @@ func equalize_current_flows(delta):
 			])
 			new_tension = new_V0
 
-			is_dangling = false
+#			is_dangling = false
 			var neighbor_tensions = neighboring_tensions()
 			var tension_diff = (new_tension - neighbor_tensions)
 			DebugLogger.logme(self, [
@@ -557,6 +559,7 @@ func equalize_current_flows(delta):
 
 		var asdasdda = 34
 		pass
+	sum_up_new_tension()
 #	sum_up_instant_tensions() # this needs to be done here, *AFTER* calculating the pin's tension!!
 	pass
 func neighboring_tensions():
